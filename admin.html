@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin | ELEA</title>
+    <link rel="icon" href="assets/logo.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/logo.png" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-admin-tab="bookings">
+    <div class="admin-shell">
+      <aside class="admin-sidebar">
+        <div class="sidebar-brand">
+          <a href="index.html" class="logo logo-light" aria-label="ELEA home"><img class="site-logo logo-img" src="assets/logo.png" alt="ELEA logo" /></a>
+          <small>Premium Admin</small>
+          <div class="admin-premium-note">Premium features: upload assets, manage testimonials, feature projects.</div>
+        </div>
+        <nav class="admin-nav">
+          <button type="button" class="active" data-admin-tab="bookings"><span>Bookings</span><span class="tab-badge">12</span></button>
+          <button type="button" data-admin-tab="reviews"><span>Reviews</span><span class="tab-badge">4</span></button>
+          <button type="button" data-admin-tab="assets"><span>Assets</span></button>
+          <button type="button" data-admin-tab="settings"><span>Settings</span></button>
+        </nav>
+        <div class="admin-user">
+          <div class="admin-user-email">joan@elea.com</div>
+          <button type="button" class="admin-logout" data-admin-logout><i data-lucide="log-out"></i> Log out</button>
+        </div>
+      </aside>
+      <main class="admin-main">
+        <div class="admin-header">
+          <h1>Premium Dashboard</h1>
+          <div class="admin-subhead">Manage bookings, upload images, and publish verified testimonials.</div>
+          <button type="button" class="admin-mobile-logout" data-admin-logout><i data-lucide="log-out"></i> Log out</button>
+        </div>
+
+        <div class="admin-content">
+          <div class="admin-toolbar">
+            <div class="admin-search">
+              <i data-lucide="search"></i>
+              <input type="search" placeholder="Search bookings or reviews" />
+            </div>
+            <button type="button" class="admin-filter">Filter by <i data-lucide="chevron-down"></i></button>
+          </div>
+
+          <section class="admin-section" data-admin-section="bookings">
+            <div class="admin-bookings-grid">
+              <article class="admin-card">
+                <div class="admin-card-top"><div class="admin-card-ref">EL-4Q2F</div><span class="status-badge status-new">new</span></div>
+                <div class="admin-card-meta">Sarah O. · 2 bedrooms · 12 May</div>
+                <div class="admin-card-services">Home Cleaning, Wardrobe Reset</div>
+              </article>
+              <article class="admin-card">
+                <div class="admin-card-top"><div class="admin-card-ref">EL-P7X9</div><span class="status-badge status-confirmed">confirmed</span></div>
+                <div class="admin-card-meta">Lena R. · 3 rooms · 15 May</div>
+                <div class="admin-card-services">Deep Cleaning, Oven Care</div>
+              </article>
+              <article class="admin-card">
+                <div class="admin-card-top"><div class="admin-card-ref">EL-9K2Q</div><span class="status-badge status-pending">pending</span></div>
+                <div class="admin-card-meta">David H. · 5 rooms · 17 May</div>
+                <div class="admin-card-services">Move-Out, Window Cleaning</div>
+              </article>
+            </div>
+          </section>
+
+          <section class="admin-section hidden" data-admin-section="reviews">
+            <div class="admin-review-grid">
+              <article class="admin-review-card">
+                <div class="admin-card-top"><div class="admin-card-ref">Stella M.</div><span class="status-badge status-confirmed">approved</span></div>
+                <div class="admin-card-meta">★★★★★ · Home Organization</div>
+                <div class="admin-card-services">“Absolutely lovely team. The apartment feels like a reset in every sense.”</div>
+                <div class="review-actions"><button class="action-btn approve" type="button"><i data-lucide="check"></i> Approve</button><button class="action-btn delete" type="button"><i data-lucide="trash-2"></i> Delete</button></div>
+              </article>
+              <article class="admin-review-card">
+                <div class="admin-card-top"><div class="admin-card-ref">Philip A.</div><span class="status-badge status-pending">pending</span></div>
+                <div class="admin-card-meta">★★★★☆ · Deep Cleaning</div>
+                <div class="admin-card-services">“Thoughtful and precise with the details.”</div>
+                <div class="review-actions"><button class="action-btn approve" type="button"><i data-lucide="check"></i> Approve</button><button class="action-btn delete" type="button"><i data-lucide="trash-2"></i> Delete</button></div>
+              </article>
+            </div>
+          </section>
+
+          <section class="admin-section hidden" data-admin-section="assets">
+            <div class="admin-card">
+              <h2>Assets</h2>
+              <p class="admin-note">Upload project images into the <strong>assets/</strong> folder in the site root. Recommended filenames are listed in assets/README.md. For production, upload optimized WebP or AVIF images.</p>
+              <div class="admin-assets-grid">
+                <div class="asset-placeholder">No uploads yet — add images to <code>assets/</code></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="admin-section hidden" data-admin-section="settings">
+            <div class="admin-card">
+              <form class="admin-settings-form">
+                <div class="admin-setting-field">
+                  <label>Business name</label>
+                  <input type="text" value="ELEA" />
+                </div>
+                <div class="admin-setting-field">
+                  <label>Contact email</label>
+                  <input type="email" value="eleacleaning@gmail.com" />
+                </div>
+                <div class="admin-setting-field">
+                  <label>WhatsApp</label>
+                  <input type="text" value="+49 152 16019843" />
+                </div>
+                <div class="admin-setting-field">
+                  <label>Footer text</label>
+                  <textarea>Cleaning &amp; Home Organization</textarea>
+                </div>
+                <button type="submit" class="admin-save-btn">Save updates</button>
+              </form>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

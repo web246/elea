@@ -1,0 +1,639 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About | ELEA</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root{
+        --forest:#1F3B2E;
+        --sage:#6B7F6A;
+        --gold:#C8A96A;
+        --ivory:#F2EDE6;
+        --soft-white:#FAF9F6;
+        --charcoal:#1A1A1A;
+        --font-heading:'Playfair Display', serif;
+        --font-body:'Montserrat', sans-serif;
+      }
+
+      *{box-sizing:border-box;}
+      html{scroll-behavior:smooth;}
+      body{
+        margin:0;
+        background:#ffffff; /* ensure white background for consistency */
+        color:var(--charcoal);
+        font-family:var(--font-body);
+        -webkit-font-smoothing:antialiased;
+        overflow-x:hidden;
+      }
+      a{color:inherit;text-decoration:none;}
+      button{font-family:inherit;cursor:pointer;}
+      img,svg{display:block;max-width:100%;}
+      :focus-visible{outline:2px solid var(--gold);outline-offset:3px;}
+
+      .elea-container{
+        width:100%;
+        max-width:1180px;
+        margin:0 auto;
+        padding:0 32px;
+      }
+
+      /* ---------- Signature motif: the drawer-line divider ---------- */
+      /* A thin rule with an offset "pull," echoing a drawer front — used
+         wherever the page changes register, since Elea's whole trade is
+         well-kept drawers, shelves, and folded stacks. */
+      .drawer-line{
+        position:relative;
+        height:1px;
+        width:100%;
+        background:linear-gradient(90deg, transparent 0%, currentColor 12%, currentColor 88%, transparent 100%);
+        opacity:.35;
+      }
+      .drawer-line::after{
+        content:"";
+        position:absolute;
+        top:50%;
+        left:14%;
+        width:6px;
+        height:6px;
+        border-radius:50%;
+        background:var(--gold);
+        opacity:1;
+        transform:translate(-50%,-50%);
+      }
+
+      /* ---------- Nav ---------- */
+      .navbar{
+        position:sticky;
+        top:0;
+        z-index:40;
+        background:rgba(250,249,246,0.92);
+        backdrop-filter:blur(10px);
+        border-bottom:1px solid rgba(31,59,46,0.12);
+      }
+      .navbar-inner{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        height:82px;
+      }
+      .logo{display:inline-flex;color:var(--forest);}
+      .logo-row{display:inline-flex;align-items:center;gap:10px;}
+      .logo-img{height:110px;width:auto;display:block;background:#ffffff;padding:10px;border-radius:12px;box-shadow:0 26px 60px rgba(0,0,0,0.12);border:1px solid rgba(26,26,26,0.08);} 
+      .logo-wordmark{
+        font-family:var(--font-heading);
+        font-size:1.5rem;
+        letter-spacing:0.12em;
+        font-weight:600;
+      }
+      .desktop-nav{display:flex;gap:38px;}
+      .desktop-nav a{
+        font-size:0.82rem;
+        letter-spacing:0.08em;
+        text-transform:uppercase;
+        color:var(--charcoal);
+        opacity:.72;
+        transition:opacity .2s ease;
+        position:relative;
+      }
+      .desktop-nav a:hover{opacity:1;}
+      .desktop-nav a[href="about.html"]{opacity:1;color:var(--forest);font-weight:600;}
+      .header-actions{display:flex;align-items:center;gap:20px;}
+      .lang-switch{display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--charcoal);opacity:.6;}
+      .lang-toggle-btn{background:none;border:none;color:inherit;padding:2px;font-size:inherit;letter-spacing:0.05em;}
+      .navbar-book{
+        background:var(--forest);
+        color:var(--soft-white);
+        border:none;
+        padding:12px 24px;
+        font-size:0.78rem;
+        letter-spacing:0.08em;
+        text-transform:uppercase;
+        border-radius:2px;
+        transition:background .2s ease;
+      }
+      .navbar-book:hover{background:var(--charcoal);}
+      .mobile-menu-toggle{display:none;background:none;border:none;color:var(--forest);}
+
+      .mobile-menu{
+        position:fixed;inset:0;z-index:50;
+        background:var(--forest);
+        color:var(--soft-white);
+        transform:translateX(100%);
+        transition:transform .35s ease;
+        display:flex;flex-direction:column;
+        padding:28px 28px 40px;
+      }
+      .mobile-menu.is-open{transform:translateX(0);}
+      .mobile-menu-header{display:flex;justify-content:space-between;align-items:center;}
+      .mobile-menu .logo{color:var(--soft-white);}
+      .booking-close{background:none;border:none;color:var(--soft-white);}
+      .mobile-menu-nav{display:flex;flex-direction:column;gap:22px;margin-top:56px;}
+      .mobile-menu-nav a{font-family:var(--font-heading);font-size:1.6rem;font-weight:500;}
+      .mobile-menu-footer{margin-top:auto;display:flex;flex-direction:column;gap:18px;}
+      .mobile-menu-footer .elea-button-primary{width:100%;}
+      .mobile-lang-row{display:flex;gap:10px;align-items:center;font-size:0.8rem;opacity:.75;}
+
+      .elea-button-primary{
+        background:var(--gold);
+        color:var(--charcoal);
+        border:none;
+        padding:16px 34px;
+        font-size:0.8rem;
+        letter-spacing:0.1em;
+        text-transform:uppercase;
+        font-weight:600;
+        border-radius:2px;
+        transition:transform .2s ease, background .2s ease;
+      }
+      .elea-button-primary:hover{background:var(--forest);color:var(--soft-white);transform:translateY(-1px);}
+
+      /* ---------- Page ---------- */
+      .content-page{padding-top:0;}
+      .elea-eyebrow{
+        font-family:var(--font-body);
+        font-size:0.75rem;
+        letter-spacing:0.22em;
+        text-transform:uppercase;
+        color:var(--gold);
+        font-weight:600;
+      }
+      .elea-heading{
+        font-family:var(--font-heading);
+        font-weight:400;
+        color:var(--forest);
+        line-height:1.05;
+      }
+      .elea-body{
+        font-family:var(--font-body);
+        font-weight:300;
+        line-height:1.8;
+        color:var(--charcoal);
+        opacity:.85;
+      }
+      .mt-3{margin-top:12px;}
+      .mt-4{margin-top:16px;}
+      .mt-6{margin-top:22px;}
+      .mt-8{margin-top:32px;}
+      .mt-20{margin-top:96px;}
+      .text-sm{font-size:0.94rem;}
+      .text-center{text-align:center;}
+
+      /* ---------- Hero / intro ---------- */
+      .about-intro{
+        padding:120px 0 96px;
+        display:grid;
+        grid-template-columns:1fr;
+        position:relative;
+        background-image: url('assets/images/living.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        color:var(--soft-white);
+        overflow:hidden;
+      }
+      .about-intro::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        /* darken overlay to improve text contrast against the photo */
+        background:linear-gradient(180deg, rgba(0,0,0,0.46) 0%, rgba(0,0,0,0.64) 100%);
+        pointer-events:none;
+        z-index:0;
+      }
+      .about-intro > *{position:relative;z-index:1}
+      .about-intro .elea-eyebrow{color:var(--forest);text-shadow:none;font-weight:700;}
+      .about-intro .elea-heading{color:var(--forest);font-size:clamp(2.6rem,5.2vw,4.4rem);max-width:14ch;text-shadow:0 10px 28px rgba(0,0,0,0.5);}
+      .about-intro .about-copy{margin-top:28px;max-width:760px;grid-template-columns:1fr;gap:0;padding-top:18px;border-top:none}
+      .about-intro .about-copy p.lead{color:rgba(255,255,255,0.95);font-style:italic;font-size:1.1rem;opacity:0.95}
+      .about-intro .about-copy .elea-body{color:rgba(255,255,255,0.9);opacity:0.95}
+      .about-intro .elea-button-primary{box-shadow:0 8px 22px rgba(0,0,0,0.4)}
+      @media (max-width:900px){
+        .about-intro{padding:80px 0 56px}
+        .about-intro .elea-heading{font-size:2.4rem;max-width:unset}
+        .about-intro .about-copy{padding-top:12px}
+      }
+      .about-heading h1{
+        font-size:clamp(2.6rem,5.2vw,4.4rem);
+        max-width:14ch;
+      }
+      .about-copy{
+        margin-top:56px;
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:56px;
+        padding-top:36px;
+        border-top:1px solid rgba(31,59,46,0.15);
+        position:relative;
+      }
+      .about-copy::before{
+        content:"";
+        position:absolute;
+        top:-1px;left:0;
+        width:64px;height:1px;
+        background:var(--gold);
+      }
+      .about-copy p{max-width:46ch;}
+      .about-copy p.lead{
+        font-family:var(--font-heading);
+        font-style:italic;
+        font-size:1.28rem;
+        color:var(--forest);
+        opacity:1;
+        line-height:1.55;
+      }
+
+      /* ---------- Founder ---------- */
+      .founder-block{
+        background:var(--forest);
+        color:var(--soft-white);
+        border-radius:4px;
+        padding:72px 64px;
+        display:grid;
+        grid-template-columns:220px 1fr;
+        gap:64px;
+        align-items:center;
+        position:relative;
+        overflow:hidden;
+      }
+      .founder-block::after{
+        content:"";
+        position:absolute;
+        right:-60px;top:-60px;
+        width:220px;height:220px;
+        border:1px solid rgba(200,169,106,0.25);
+        border-radius:50%;
+      }
+      .founder-portrait{
+        width:180px;height:180px;
+        border-radius:50%;
+        border:1px solid var(--gold);
+        display:flex;align-items:center;justify-content:center;
+        position:relative;
+        font-family:var(--font-heading);
+        font-style:italic;
+        font-size:3.1rem;
+        color:var(--gold);
+        background:transparent;
+      }
+      .founder-portrait::before{
+        content:"";
+        position:absolute;
+        inset:12px;
+        border:1px solid rgba(200,169,106,0.35);
+        border-radius:50%;
+      }
+      .founder-copy .elea-eyebrow{color:var(--gold);}
+      .founder-copy h2{color:var(--soft-white) !important;}
+      .quote-block{
+        font-family:var(--font-heading);
+        font-style:italic;
+        color:var(--soft-white);
+        opacity:1;
+        font-size:1.35rem;
+        line-height:1.6;
+        max-width:32ch;
+        position:relative;
+        padding-left:26px;
+      }
+      .quote-block::before{
+        content:"";
+        position:absolute;
+        left:0;top:10px;
+        width:14px;height:1px;
+        background:var(--gold);
+      }
+      .quote-block::after{
+        content:"";
+        position:absolute;
+        left:0;top:10px;
+        width:5px;height:5px;
+        margin-left:-2px;margin-top:-2px;
+        border-radius:50%;
+        background:var(--gold);
+      }
+
+      /* ---------- Values — rendered as a chest of drawers ---------- */
+      .values-grid{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        border:1px solid rgba(31,59,46,0.18);
+        border-radius:3px;
+        overflow:hidden;
+      }
+      .value-cell{
+        position:relative;
+        padding:44px 40px 38px;
+        background:var(--soft-white);
+        border-right:1px solid rgba(31,59,46,0.14);
+        border-bottom:1px solid rgba(31,59,46,0.14);
+        transition:background .28s ease, transform .28s ease, box-shadow .28s ease;
+      }
+      .value-cell:nth-child(2n){border-right:none;}
+      .value-cell:nth-child(3),.value-cell:nth-child(4){border-bottom:none;}
+      .value-cell::before{
+        content:"";
+        position:absolute;
+        top:22px;left:40px;
+        width:34px;height:1px;
+        background:var(--gold);
+        transition:width .28s ease;
+      }
+      .value-number{
+        position:absolute;
+        top:16px;right:22px;
+        width:7px;height:7px;
+        border-radius:50%;
+        background:rgba(200,169,106,0.4);
+        transition:background .28s ease, transform .28s ease;
+        font-size:0; /* dot replaces numeral — see note in chat */
+      }
+      .value-title{
+        font-family:var(--font-heading);
+        font-weight:600;
+        font-size:1.5rem;
+        color:var(--forest);
+        margin:26px 0 12px;
+      }
+      .value-cell p{margin:0;max-width:32ch;}
+      .value-cell:hover{
+        background:var(--ivory);
+        transform:translateY(3px);
+        box-shadow:0 18px 30px -22px rgba(31,59,46,0.45);
+      }
+      .value-cell:hover::before{width:56px;}
+      .value-cell:hover .value-number{background:var(--gold);transform:scale(1.3);}
+
+      /* ---------- CTA ---------- */
+      .cta-band{
+        background:var(--ivory);
+        border-radius:4px;
+        padding:64px 40px;
+        text-align:center;
+      }
+      .cta-band h2{
+        font-family:var(--font-heading);
+        font-weight:400;
+        font-size:clamp(1.7rem,3vw,2.4rem);
+        color:var(--forest);
+        margin:0 0 28px;
+      }
+
+      /* ---------- Scroll reveal ---------- */
+      .scroll-reveal{opacity:0;transform:translateY(22px);transition:opacity .7s ease, transform .7s ease;}
+      .scroll-reveal.is-visible{opacity:1;transform:translateY(0);}
+      @media (prefers-reduced-motion: reduce){
+        .scroll-reveal{opacity:1;transform:none;transition:none;}
+        html{scroll-behavior:auto;}
+      }
+
+      /* ---------- Footer ---------- */
+      .site-footer{background:var(--charcoal);color:var(--soft-white);margin-top:120px;padding:64px 0 28px;}
+      .footer-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:32px;padding-bottom:40px;border-bottom:1px solid rgba(250,249,246,0.14);}
+      .logo-light{color:var(--soft-white);}
+      .logo-tagline{font-size:0.82rem;letter-spacing:0.04em;}
+      .footer-links{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;font-size:0.85rem;opacity:.8;}
+      .footer-socials{display:flex;gap:16px;}
+      .footer-socials a{width:38px;height:38px;border:1px solid rgba(250,249,246,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+      .footer-socials svg,.footer-socials i{width:16px;height:16px;}
+      .footer-bottom{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;padding-top:26px;font-size:0.78rem;opacity:.7;}
+      .footer-legal{display:flex;gap:18px;flex-wrap:wrap;}
+      .footer-lang{display:flex;gap:10px;align-items:center;}
+
+      .whatsapp-float{
+        position:fixed;right:24px;bottom:24px;z-index:30;
+        width:54px;height:54px;border-radius:50%;
+        background:var(--forest);color:var(--soft-white);border:none;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 10px 24px -8px rgba(31,59,46,0.55);
+      }
+      .whatsapp-float svg{width:24px;height:24px;}
+
+      .booking-modal,.review-modal{display:none;}
+      .review-modal.is-open,.booking-modal.is-open{display:flex;position:fixed;inset:0;z-index:60;align-items:center;justify-content:center;background:rgba(26,26,26,0.55);}
+      .review-modal-card{background:var(--soft-white);padding:36px;border-radius:6px;max-width:420px;width:92%;position:relative;}
+      .review-close{position:absolute;top:16px;right:16px;background:none;border:none;color:var(--charcoal);}
+      .review-form{display:flex;flex-direction:column;gap:16px;}
+      .review-rating{display:flex;gap:6px;}
+      .review-rating button{background:none;border:none;color:var(--sage);}
+      .review-rating button.active{color:var(--gold);}
+      .review-form-field{display:flex;flex-direction:column;gap:6px;font-size:0.82rem;}
+      .elea-input{border:1px solid rgba(31,59,46,0.25);padding:10px 12px;border-radius:2px;font-family:var(--font-body);font-size:0.9rem;background:var(--soft-white);color:var(--charcoal);}
+      .review-submit{margin-top:6px;}
+      .review-thanks.hidden{display:none;}
+      .elea-link{background:none;border:none;color:var(--forest);text-decoration:underline;margin-top:12px;}
+
+      /* ---------- Responsive ---------- */
+      @media (max-width:900px){
+        .desktop-nav{display:none;}
+        .mobile-menu-toggle{display:block;}
+        .about-copy{grid-template-columns:1fr;gap:28px;}
+        .founder-block{grid-template-columns:1fr;text-align:left;padding:52px 32px;gap:36px;}
+        .founder-portrait{width:140px;height:140px;font-size:2.4rem;}
+        .values-grid{grid-template-columns:1fr;}
+        .value-cell{border-right:none !important;border-bottom:1px solid rgba(31,59,46,0.14) !important;}
+        .value-cell:last-child{border-bottom:none !important;}
+        .mt-20{margin-top:64px;}
+      }
+    </style>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-page="about">
+    <div class="page">
+      <header class="navbar" id="navbar">
+        <div class="elea-container navbar-inner">
+          <a href="index.html" class="logo logo-dark" aria-label="ELEA home">
+            <span class="logo-row"><img src="assets/logo.png" alt="ELEA" class="logo-img"></span>
+          </a>
+            <nav class="desktop-nav" aria-label="Main navigation">
+            <a href="index.html" data-i18n="nav.home">Home</a>
+            <a href="about.html" data-i18n="nav.about">About</a>
+            <a href="services.html" data-i18n="nav.services">Services</a>
+            <a href="index.html#transformations" data-i18n="nav.transformations">Transformations</a>
+            <a href="index.html#reviews" data-i18n="nav.reviews">Reviews</a>
+            <a href="contact.html" data-i18n="nav.contact">Contact</a>
+          </nav>
+            <div class="header-actions">
+            <div class="lang-switch"><button type="button" class="lang-toggle-btn" data-lang-toggle="en">EN</button><span>|</span><button type="button" class="lang-toggle-btn" data-lang-toggle="de">DE</button></div>
+            <button type="button" class="navbar-book" data-book-btn data-i18n="nav.book">Book Now</button>
+            <button type="button" class="mobile-menu-toggle" data-mobile-toggle aria-label="Open menu"><i data-lucide="menu"></i></button>
+          </div>
+        </div>
+      </header>
+      <div class="mobile-menu" data-mobile-menu>
+          <div class="mobile-menu-header">
+              <a href="index.html" class="logo logo-dark"><span class="logo-row"><img src="assets/logo.png" alt="ELEA" class="logo-img"></span></a>
+          <button class="booking-close" data-mobile-close aria-label="Close menu"><i data-lucide="x"></i></button>
+        </div>
+        <nav class="mobile-menu-nav">
+          <a href="index.html">Home</a>
+          <a href="about.html">About</a>
+          <a href="services.html">Services</a>
+          <a href="index.html#transformations">Transformations</a>
+          <a href="index.html#reviews">Reviews</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+        <div class="mobile-menu-footer">
+          <button type="button" class="elea-button-primary" data-book-btn>Book Now</button>
+          <div class="mobile-lang-row"><button type="button" class="lang-toggle-btn" data-lang-toggle="en">English</button><span>|</span><button type="button" class="lang-toggle-btn" data-lang-toggle="de">Deutsch</button></div>
+        </div>
+      </div>
+
+      <main>
+        <div class="elea-container content-page">
+          <div class="about-intro scroll-reveal">
+            <div class="about-heading">
+              <div class="elea-eyebrow" data-i18n="about.eyebrow">About Elea</div>
+              <h1 class="elea-heading mt-4" data-i18n="about.heading">Founded on care and detail.</h1>
+            </div>
+            <div class="about-copy">
+              <p class="elea-body lead" data-i18n="about.body1">Elea was founded by Joan Kayaga in Berlin with a simple conviction: that a clean, organized home is the foundation of a calmer, more intentional life.</p>
+              <div>
+                <p class="elea-body" data-i18n="about.body2">What began as a commitment to meticulous, respectful home care has grown into a full-service home organization brand — one that treats every home as a space worthy of genuine attention. From routine cleaning to complete wardrobe transformations, Elea approaches each visit with the same editorial standard: nothing overlooked, nothing rushed.</p>
+                <p class="elea-body mt-6" data-i18n="about.body3">We believe home care is not a transaction but a relationship. We learn your space, respect your routines, and return with consistency — so your home always feels cared for, never just cleaned.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-20 drawer-line scroll-reveal" style="color:var(--forest);"></div>
+
+          <div class="founder-block mt-20 scroll-reveal">
+            <div class="founder-portrait">JK</div>
+            <div class="founder-copy">
+              <div class="elea-eyebrow" data-i18n="about.founderRole">Founder</div>
+              <h2 class="mt-4" style="font-family:var(--font-heading); font-size: clamp(2.2rem,4vw,3.4rem); font-weight:400;">Joan Kayaga</h2>
+              <p class="quote-block mt-8">A clean, organized home is the foundation of a calmer life. That belief is in every visit we make.</p>
+            </div>
+          </div>
+
+          <div class="mt-20 scroll-reveal">
+            <div class="elea-eyebrow" data-i18n="about.valuesHeading">What guides us</div>
+            <h2 class="elea-heading mt-4">The Elea standard</h2>
+            <p class="elea-body mt-4" style="max-width:52ch;">Four commitments we keep at every home we visit — no exceptions, no shortcuts.</p>
+            <div class="values-grid mt-8">
+              <article class="value-cell">
+                <span class="value-number">01</span>
+                <h3 class="value-title">Care</h3>
+                <p class="elea-body text-sm">Every home is treated as if it were our own — with patience, respect and genuine attention.</p>
+              </article>
+              <article class="value-cell">
+                <span class="value-number">02</span>
+                <h3 class="value-title">Detail</h3>
+                <p class="elea-body text-sm">The difference is in the details. We look where others don't, and we don't leave until it's right.</p>
+              </article>
+              <article class="value-cell">
+                <span class="value-number">03</span>
+                <h3 class="value-title">Consistency</h3>
+                <p class="elea-body text-sm">A standard that doesn't slip. The same quality, every visit, every time.</p>
+              </article>
+              <article class="value-cell">
+                <span class="value-number">04</span>
+                <h3 class="value-title">Trust</h3>
+                <p class="elea-body text-sm">Vetted professionals, transparent communication, and a satisfaction guarantee you can rely on.</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="mt-20 cta-band scroll-reveal">
+            <h2>Ready for a calmer home?</h2>
+            <button type="button" class="elea-button-primary" data-book-btn>Book a Service</button>
+          </div>
+        </div>
+      </main>
+
+      <footer class="site-footer">
+        <div class="elea-container footer-inner">
+          <div class="footer-top">
+            <div>
+              <a href="index.html" class="logo logo-light"><span class="logo-row"><img src="assets/logo.png" alt="ELEA" class="logo-img"></span></a>
+              <div class="logo-tagline mt-3" style="color:hsl(var(--background) / 0.5);">Cleaning &amp; Home Organization</div>
+            </div>
+            <nav class="footer-links"><a href="about.html" data-i18n="nav.about">About</a><a href="services.html" data-i18n="nav.services">Services</a><a href="index.html#transformations" data-i18n="nav.transformations">Transformations</a><a href="index.html#reviews" data-i18n="nav.reviews">Reviews</a><a href="contact.html" data-i18n="nav.contact">Contact</a></nav>
+            <div class="footer-services" aria-label="Services">
+              <div class="footer-services-title">Services</div>
+              <nav class="footer-services-list">
+                <a href="services.html">Home Cleaning</a>
+                <a href="services.html">Move-In</a>
+                <a href="services.html">Move-Out</a>
+                <a href="services.html">After-Renovation</a>
+                <a href="services.html">Oven &amp; Appliance</a>
+                <a href="services.html">Scheduled Laundry</a>
+                <a href="services.html">Window Cleaning</a>
+                <a href="services.html">Home Organization</a>
+              </nav>
+            </div>
+            <div class="footer-socials">
+              <a href="tel:+4915216019843" aria-label="Phone">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 16.5v3a2.5 2.5 0 0 1-2.7 2.5c-3.1-.4-6-2.2-8.3-4.5S6.9 13.8 6.5 10.7A2.5 2.5 0 0 1 9 8h3a1 1 0 0 1 1 1v2.1a1 1 0 0 1-.3.8l-1.2 1.2a10 10 0 0 0 4.5 4.5l1.2-1.2a1 1 0 0 1 .8-.3H20a1 1 0 0 1 1 1z" fill="currentColor"/></svg>
+              </a>
+              <a href="mailto:eleacleaning@gmail.com" aria-label="Email">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v11A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5v-11z" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M21 6.5L12 13 3 6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              <a href="https://wa.me/4915216019843" target="_blank" rel="noreferrer" aria-label="WhatsApp">
+                <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.692.248-1.285.173-1.407-.074-.122-.272-.198-.57-.347" fill="currentColor"/></svg>
+              </a>
+              <a href="https://instagram.com" target="_blank" rel="noreferrer" aria-label="Instagram">
+                <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none"><rect x="3" y="3" width="18" height="18" rx="5" stroke="currentColor" stroke-width="1" fill="none"/><path d="M8 11.5a3.5 3.5 0 0 0 7 0" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/><circle cx="17.5" cy="6.5" r="0.6" fill="currentColor"/></svg>
+              </a>
+            </div>
+          </div>
+          <div class="footer-bottom">
+            <div class="footer-legal"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="terms.html">Terms &amp; Conditions</a><a href="cancellation.html">Booking &amp; Cancellation</a></div>
+            <div class="footer-lang"><button type="button" class="lang-toggle-btn" data-lang-toggle="en">English</button><span style="color:hsl(var(--background) / 0.6);">|</span><button type="button" class="lang-toggle-btn" data-lang-toggle="de">Deutsch</button></div>
+            <div class="footer-copyright">© 2026 Elea. All rights reserved.</div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <button type="button" class="whatsapp-float" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.692.248-1.285.173-1.407-.074-.122-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg></button>
+    <div id="booking-modal" class="booking-modal"></div>
+    <div id="review-modal" class="review-modal">
+      <div class="review-modal-card">
+        <button id="review-close" class="review-close" aria-label="Close review modal"><i data-lucide="x"></i></button>
+        <form id="review-form" class="review-form">
+          <h3 class="font-heading">Leave a Review</h3>
+          <div class="review-rating">
+            <button type="button" data-rating-star="1"><i data-lucide="star"></i></button>
+            <button type="button" data-rating-star="2"><i data-lucide="star"></i></button>
+            <button type="button" data-rating-star="3"><i data-lucide="star"></i></button>
+            <button type="button" data-rating-star="4"><i data-lucide="star"></i></button>
+            <button type="button" data-rating-star="5" class="active"><i data-lucide="star"></i></button>
+          </div>
+          <div class="review-form-field"><label for="review-name">Your name</label><input id="review-name" class="elea-input" type="text" /></div>
+          <div class="review-form-field"><label for="review-service">Service received</label><input id="review-service" class="elea-input" type="text" /></div>
+          <div class="review-form-field"><label for="review-text">Your review</label><textarea id="review-text" class="elea-input" rows="4"></textarea></div>
+          <button type="submit" class="elea-button-primary review-submit">Submit Review</button>
+        </form>
+        <div id="review-thanks" class="review-thanks hidden"><h3 class="font-heading">Thank you! Your review will appear once approved by Elea.</h3><button type="button" class="elea-link" data-review-close>OK</button></div>
+      </div>
+    </div>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="app.js"></script>
+    <script>
+      // Lightweight scroll-reveal fallback — safe to remove if app.js already handles .scroll-reveal
+      document.addEventListener('DOMContentLoaded', function () {
+        if (window.lucide) { try { lucide.createIcons(); } catch (e) {} }
+        var targets = document.querySelectorAll('.scroll-reveal');
+        if ('IntersectionObserver' in window) {
+          var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                io.unobserve(entry.target);
+              }
+            });
+          }, { threshold: 0.15 });
+          targets.forEach(function (el) { io.observe(el); });
+        } else {
+          targets.forEach(function (el) { el.classList.add('is-visible'); });
+        }
+      });
+    </script>
+  </body>
+</html>
