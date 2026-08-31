@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Booking & Cancellation | ELEA</title>
-    <link rel="icon" href="assets/logo.jpeg" type="image/jpeg" />
-    <link rel="apple-touch-icon" href="assets/logo.jpeg" />
+    <link rel="icon" href="assets/best.png" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/best.png" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="cancellation.html" />
-    <meta property="og:image" content="assets/logo.jpeg" />
-    <meta name="twitter:image" content="assets/logo.jpeg" />
+    <meta property="og:image" content="assets/best.png" />
+    <meta name="twitter:image" content="assets/best.png" />
     <meta name="author" content="ELEA — Cleaning & Home Organization" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,29 +18,81 @@
   </head>
   <body>
     <div class="page">
-      <header class="navbar" id="navbar">
-        <div class="elea-container navbar-inner"><a href="index.html" class="logo logo-dark" aria-label="ELEA home"><img class="site-logo" src="assets/logo.jpeg" alt="ELEA logo" style="height:48px; width:auto; display:inline-block;" /></a><nav class="desktop-nav"><a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="index.html#transformations">Transformations</a><a href="index.html#reviews">Reviews</a><a href="contact.html">Contact</a></nav><div class="header-actions"><div class="lang-switch"><button type="button" class="lang-toggle-btn" data-lang-toggle="en">EN</button><span>|</span><button type="button" class="lang-toggle-btn" data-lang-toggle="de">DE</button></div><button type="button" class="navbar-book" data-book-btn>Book Now</button><button type="button" class="mobile-menu-toggle" data-mobile-toggle><i data-lucide="menu"></i></button></div></div>
-      </header>
+        <header class="navbar" id="navbar">
+          <div class="elea-container navbar-inner">
+            <a href="index.html" class="logo logo-dark" aria-label="ELEA home"><img class="site-logo" src="assets/best.png" alt="ELEA logo" style="height:48px; width:auto; display:inline-block;" /></a>
+            <nav class="desktop-nav">
+              <a href="index.html" data-i18n="nav.home">Home</a>
+              <a href="about.html" data-i18n="nav.about">About</a>
+              <a href="services.html" data-i18n="nav.services">Services</a>
+              <a href="index.html#transformations" data-i18n="nav.transformations">Transformations</a>
+              <a href="index.html#reviews" data-i18n="nav.reviews">Reviews</a>
+              <a href="contact.html" data-i18n="nav.contact">Contact</a>
+            </nav>
+            <div class="header-actions">
+              <div class="lang-switch"><button type="button" class="lang-toggle-btn" data-lang-toggle="en">EN</button><span>|</span><button type="button" class="lang-toggle-btn" data-lang-toggle="de">DE</button></div>
+              <button type="button" class="navbar-book" data-book-btn data-i18n="nav.book">Book Now</button>
+              <button type="button" class="mobile-menu-toggle" data-mobile-toggle><i data-lucide="menu"></i></button>
+            </div>
+          </div>
+        </header>
       <div class="mobile-menu" data-mobile-menu>
         <div class="mobile-menu-header"><a href="index.html" class="logo logo-dark"><span class="logo-row"><span class="logo-mark"><svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="1.5"></rect><rect x="4" y="13" width="24" height="1.5"></rect><rect x="4" y="20" width="24" height="1.5"></rect><rect x="4" y="6" width="1.5" height="15.5"></rect><circle cx="27" cy="6" r="1.4"></circle></svg></span><span class="logo-wordmark">ELEA</span></span></a><button class="booking-close" data-mobile-close aria-label="Close menu"><i data-lucide="x"></i></button></div>
         <nav class="mobile-menu-nav"><a href="index.html">Home</a><a href="about.html">About</a><a href="services.html">Services</a><a href="index.html#transformations">Transformations</a><a href="index.html#reviews">Reviews</a><a href="contact.html">Contact</a></nav>
         <div class="mobile-menu-footer"><button type="button" class="elea-button-primary" data-book-btn>Book Now</button><div class="mobile-lang-row"><button type="button" class="lang-toggle-btn" data-lang-toggle="en">English</button><span>|</span><button type="button" class="lang-toggle-btn" data-lang-toggle="de">Deutsch</button></div></div>
       </div>
-      <main>
-        <div class="legal-page">
-          <div class="elea-container legal-container">
-            <div class="elea-eyebrow">Legal</div>
+      </main>
+        <footer class="site-footer">
+              <a href="index.html" class="logo logo-light"><img class="site-logo" src="assets/best.png" alt="ELEA logo" style="height:40px; width:auto; display:inline-block;" /></a>
             <h1 class="elea-heading mb-12">Booking &amp; Cancellation</h1>
-            <div class="notice-box"><span class="font-semibold">Notice: </span>This is placeholder legal content. Joan Kayaga must review and finalize before publishing.</div>
+              <div class="elea-eyebrow" data-i18n="cancellation.eyebrow">Legal</div>
+              <h1 class="elea-heading mb-12" data-i18n="cancellation.title">Booking &amp; Cancellation</h1>
+            
             <div class="space-y-10">
               <section class="legal-section"><h2>Booking Process</h2><p>To book an ELEA service, you may contact us via phone, email, WhatsApp or the booking form on this website. We confirm availability and service details before the appointment is finalized.</p></section>
               <section class="legal-section"><h2>Cancellation Policy</h2><p>We understand schedules change. If you need to cancel or reschedule your booking, please contact us as soon as possible. We will do our best to accommodate a new time slot.</p></section>
               <section class="legal-section"><h2>Late Arrivals</h2><p>Late arrivals may affect the appointment duration and therefore the service completion time. We appreciate your understanding and will communicate any changes as clearly as possible.</p></section>
+                <section class="legal-section"><h2 data-i18n="cancellation.s1.title">Booking Process</h2><p data-i18n="cancellation.s1.body">To book an ELEA service, you may contact us via phone, email, WhatsApp or the booking form on this website. We confirm availability and service details before the appointment is finalized.</p></section>
+                <section class="legal-section"><h2 data-i18n="cancellation.s2.title">Cancellation Policy</h2><p data-i18n="cancellation.s2.body">We understand schedules change. If you need to cancel or reschedule your booking, please contact us as soon as possible. We will do our best to accommodate a new time slot.</p></section>
+                <section class="legal-section"><h2 data-i18n="cancellation.s3.title">Late Arrivals</h2><p data-i18n="cancellation.s3.body">Late arrivals may affect the appointment duration and therefore the service completion time. We appreciate your understanding and will communicate any changes as clearly as possible.</p></section>
             </div>
           </div>
         </div>
       </main>
-      <footer class="site-footer"><div class="elea-container footer-inner"><div class="footer-top"><div><a href="index.html" class="logo logo-light"><img class="site-logo" src="assets/logo.jpeg" alt="ELEA logo" style="height:40px; width:auto; display:inline-block;" /></a><div class="logo-tagline mt-3" style="color:hsl(var(--background) / 0.5);">Cleaning &amp; Home Organization</div></div><nav class="footer-links"><a href="about.html">About</a><a href="services.html">Services</a><a href="index.html#transformations">Transformations</a><a href="index.html#reviews">Reviews</a><a href="contact.html">Contact</a></nav><div class="footer-services" aria-label="Services"><div class="footer-services-title">Services</div><nav class="footer-services-list"><a href="services.html">Home Cleaning</a><a href="services.html">Move-In</a><a href="services.html">Move-Out</a><a href="services.html">After-Renovation</a><a href="services.html">Oven &amp; Appliance</a><a href="services.html">Scheduled Laundry</a><a href="services.html">Window Cleaning</a><a href="services.html">Home Organization</a></nav></div><div class="footer-socials"><a href="tel:+4915216019843"><i data-lucide="phone"></i></a><a href="mailto:eleacleaning@gmail.com"><i data-lucide="mail"></i></a><a href="https://wa.me/4915216019843" target="_blank" rel="noreferrer"><i data-lucide="message-circle"></i></a><a href="https://instagram.com" target="_blank" rel="noreferrer"><i data-lucide="instagram"></i></a></div></div><div class="footer-bottom"><div class="footer-legal"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="terms.html">Terms &amp; Conditions</a><a href="cancellation.html">Booking &amp; Cancellation</a></div><div class="footer-lang"><button type="button" class="lang-toggle-btn" data-lang-toggle="en">English</button><span style="color:hsl(var(--background) / 0.6);">|</span><button type="button" class="lang-toggle-btn" data-lang-toggle="de">Deutsch</button></div><div class="footer-copyright">© 2026 Elea. All rights reserved.</div></div></div>
+      <footer class="site-footer"><div class="elea-container footer-inner"><div class="footer-top"><div><a href="index.html" class="logo logo-light"><img class="site-logo" src="assets/logo.jpeg" alt="ELEA logo" style="height:40px; width:auto; display:inline-block;" /></a><div class="logo-tagline mt-3" style="color:hsl(var(--background) / 0.5);">Cleaning &amp; Home Organization</div></div><nav class="footer-links"><a href="about.html">About</a><a href="services.html">Services</a><a href="index.html#transformations">Transformations</a><a href="index.html#reviews">Reviews</a><a href="contact.html">Contact</a></nav><div class="footer-services" aria-label="Services"><div class="footer-services-title">Services</div><nav class="footer-services-list"><a href="services.html">Home Cleaning</a><a href="services.html">Move-In</a><a href="services.html">Move-Out</a><a href="services.html">After-Renovation</a><a href="services.html">Oven &amp; Appliance</a><a href="services.html">Scheduled Laundry</a><a href="services.html">Window Cleaning</a><a href="services.html">Home Organization</a></nav></div><div class="footer-socials"><a href="tel:+4915216019843"><i data-lucide="phone"></i></a><a href="mailto:eleacleaning@gmail.com"><i data-lucide="mail"></i></a><a href="https://wa.me/4915216019843" target="_blank" rel="noreferrer"><i data-lucide="message-circle"></i></a><a href="https://instagram.com/eleacleaningcompany" target="_blank" rel="noreferrer"><i data-lucide="instagram"></i></a></div></div><div class="footer-bottom"><div class="footer-legal"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="terms.html">Terms &amp; Conditions</a><a href="cancellation.html">Booking &amp; Cancellation</a></div><div class="footer-lang"><button type="button" class="lang-toggle-btn" data-lang-toggle="en">English</button><span style="color:hsl(var(--background) / 0.6);">|</span><button type="button" class="lang-toggle-btn" data-lang-toggle="de">Deutsch</button></div><div class="footer-copyright">© 2026 Elea. All rights reserved.</div></div></div>
+        <footer class="site-footer">
+          <div class="elea-container footer-inner">
+            <div class="footer-top">
+              <div>
+                <a href="index.html" class="logo logo-light"><img class="site-logo" src="assets/best.png" alt="ELEA logo" style="height:40px; width:auto; display:inline-block;" /></a>
+                <div class="logo-tagline mt-3" style="color:hsl(var(--background) / 0.5);" data-i18n="footer.tagline">Cleaning &amp; Home Organization</div>
+              </div>
+              <nav class="footer-links">
+                <a href="about.html" data-i18n="nav.about">About</a>
+                <a href="services.html" data-i18n="nav.services">Services</a>
+                <a href="index.html#transformations" data-i18n="nav.transformations">Transformations</a>
+                <a href="index.html#reviews" data-i18n="nav.reviews">Reviews</a>
+                <a href="contact.html" data-i18n="nav.contact">Contact</a>
+              </nav>
+              <div class="footer-socials">
+                <a href="tel:+4915216019843"><i data-lucide="phone"></i></a>
+                <a href="mailto:eleacleaning@gmail.com"><i data-lucide="mail"></i></a>
+                <a href="https://wa.me/4915216019843" target="_blank" rel="noreferrer"><i data-lucide="message-circle"></i></a>
+                <a href="https://instagram.com/eleacleaningcompany" target="_blank" rel="noreferrer"><i data-lucide="instagram"></i></a>
+              </div>
+            </div>
+            <div class="footer-bottom">
+              <div class="footer-legal">
+                <a href="impressum.html" data-i18n="legalPages.impressum">Impressum</a>
+                <a href="datenschutz.html" data-i18n="legalPages.datenschutz">Datenschutz</a>
+                <a href="terms.html" data-i18n="legalPages.terms">Terms &amp; Conditions</a>
+                <a href="cancellation.html" data-i18n="legalPages.cancellation">Booking &amp; Cancellation</a>
+              </div>
+              <div class="footer-lang"><button type="button" class="lang-toggle-btn" data-lang-toggle="en">English</button><span style="color:hsl(var(--background) / 0.6);">|</span><button type="button" class="lang-toggle-btn" data-lang-toggle="de">Deutsch</button></div>
+              <div class="footer-copyright"><span data-i18n-year>© 2026 Elea.</span> <span data-i18n="footer.rights">All rights reserved.</span></div>
+            </div>
+          </div>
+        </footer>
       </footer>
     </div>
     <button type="button" class="whatsapp-float" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.692.248-1.285.173-1.407-.074-.122-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"></path></svg></button>

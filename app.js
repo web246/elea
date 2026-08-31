@@ -3,53 +3,171 @@ const defaults = {
   phone: '+49 152 16019843',
   email: 'eleacleaning@gmail.com',
   whatsapp: '+49 152 16019843',
-  instagram: 'https://instagram.com',
-  instagramDisplay: '@elea.cleaning',
+  instagram: 'https://instagram.com/eleacleaningcompany',
+  instagramDisplay: '@eleacleaningcompany',
   whatsappNumber: '4915216019843',
   notificationEmail: 'websitesbrian585@gmail.com'
 };
+// Set this to your Google Apps Script Web App URL after deploying (see README_APPSCRIPT.md)
+defaults.bookingEndpoint = '';
 
-// Ensure legacy references to logo.jpeg load the new logo.png at runtime
+const ADMIN_STORAGE_KEY = 'elea-admin-state';
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
+}
+
+function getDefaultAssetCatalog() {
+  return [
+    { id: 'asset-hero', name: 'Hero', path: 'assets/images/hero.png', active: true },
+    { id: 'asset-kitchen', name: 'Kitchen', path: 'assets/images/kitchen.png', active: true },
+    { id: 'asset-bathroom', name: 'Bathroom', path: 'assets/images/bathroom.png', active: true },
+    { id: 'asset-bedroom', name: 'Bedroom', path: 'assets/images/bedroom.png', active: true },
+    { id: 'asset-living', name: 'Living room', path: 'assets/images/living.png', active: true },
+    { id: 'asset-wardrobe', name: 'Wardrobe', path: 'assets/images/wardrobe.png', active: true },
+    { id: 'asset-movein', name: 'Move-in', path: 'assets/images/moveIn.png', active: true },
+    { id: 'asset-moveout', name: 'Move-out', path: 'assets/images/moveOut.png', active: true },
+    { id: 'asset-oven', name: 'Oven', path: 'assets/images/oven.png', active: true },
+    { id: 'asset-laundry', name: 'Laundry', path: 'assets/images/laundry.png', active: true },
+    { id: 'asset-window', name: 'Window', path: 'assets/images/window.png', active: true },
+    { id: 'asset-reno', name: 'After renovation', path: 'assets/images/afterReno.png', active: true },
+    { id: 'asset-best', name: 'Site logo', path: 'assets/best.png', active: true }
+  ];
+}
+
+function mergeAssetCatalog(assets) {
+  const catalog = [...getDefaultAssetCatalog()];
+  const seen = new Map();
+
+  catalog.forEach((asset) => {
+    const key = asset.path || asset.id;
+    seen.set(key, { ...asset, active: asset.active !== false });
+  });
+
+  (Array.isArray(assets) ? assets : []).forEach((asset) => {
+    const key = asset.path || asset.id;
+    if (!key) return;
+    seen.set(key, {
+      ...seen.get(key),
+      ...asset,
+      id: asset.id || seen.get(key)?.id || `asset-${seen.size}`,
+      name: asset.name || seen.get(key)?.name || key,
+      path: asset.path || seen.get(key)?.path || key,
+      active: asset.active !== false
+    });
+  });
+
+  return [...seen.values()];
+}
+
+function getDefaultAdminState() {
+  return {
+    site: {
+      businessName: 'ELEA',
+      phone: defaults.phone,
+      email: defaults.email,
+      whatsapp: defaults.whatsapp,
+      instagram: defaults.instagram,
+      instagramDisplay: defaults.instagramDisplay,
+      footerText: 'Cleaning & Home Organization'
+    },
+    bookings: [],
+    reviews: [],
+    ctas: [],
+    assets: getDefaultAssetCatalog()
+  };
+}
+
+function normalizeAdminState(raw) {
+  const base = getDefaultAdminState();
+  const state = raw && typeof raw === 'object' ? raw : {};
+  const normalized = {
+    site: { ...base.site, ...(state.site || {}) },
+    bookings: Array.isArray(state.bookings) ? state.bookings : base.bookings,
+    reviews: Array.isArray(state.reviews) ? state.reviews : base.reviews,
+    ctas: Array.isArray(state.ctas) ? state.ctas : base.ctas,
+    assets: Array.isArray(state.assets) ? mergeAssetCatalog(state.assets) : base.assets
+  };
+
+  const legacyBookingIds = ['booking-001', 'booking-002', 'EL-7NQ2', 'EL-4RJC'];
+  const legacyReviewIds = ['review-001', 'review-002'];
+  const looksLegacy =
+    normalized.bookings.some((booking) => legacyBookingIds.includes(booking.id) || legacyBookingIds.includes(booking.reference)) ||
+    normalized.reviews.some((review) => legacyReviewIds.includes(review.id)) ||
+    normalized.ctas.some((cta) => cta.id && /^cta-\d+$/.test(cta.id) && (cta.title === 'Autumn Refresh' || cta.title === 'Move-In Reset'));
+
+  return looksLegacy ? base : normalized;
+}
+
+function getAdminState() {
+  try {
+    const raw = localStorage.getItem(ADMIN_STORAGE_KEY);
+    if (raw) {
+      const parsed = normalizeAdminState(JSON.parse(raw));
+      if (JSON.stringify(parsed) !== raw) {
+        localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(parsed));
+      }
+      return parsed;
+    }
+  } catch (error) {
+    console.warn('Unable to read admin state from localStorage', error);
+  }
+
+  const initial = getDefaultAdminState();
+  localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(initial));
+  return initial;
+}
+
+function saveAdminState(state) {
+  const normalized = normalizeAdminState(state);
+  localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(normalized));
+  return normalized;
+}
+
+function applyAdminSiteValues() {
+  const state = getAdminState();
+  defaults.phone = state.site.phone || defaults.phone;
+  defaults.email = state.site.email || defaults.email;
+  defaults.whatsapp = state.site.whatsapp || defaults.whatsapp;
+  defaults.instagram = state.site.instagram || defaults.instagram;
+  defaults.instagramDisplay = state.site.instagramDisplay || defaults.instagramDisplay;
+  document.documentElement.style.setProperty('--admin-brand', state.site.businessName || 'ELEA');
+}
+
+// Ensure legacy references to older logo files load the new best.png at runtime
 document.addEventListener('DOMContentLoaded', function () {
   // Replace img src attributes
   document.querySelectorAll('img').forEach(function (img) {
     const src = img.getAttribute('src');
     if (!src) return;
-    if (src.endsWith('assets/logo.jpeg') || src.endsWith('/assets/logo.jpeg') || src === 'assets/logo.jpeg') {
-      img.setAttribute('src', 'assets/logo.png');
+    if (src && (src.endsWith('assets/logo.jpeg') || src.endsWith('/assets/logo.png') || src.endsWith('/assets/logo.jpeg') || src === 'assets/logo.jpeg' || src === 'assets/logo.png')) {
+      img.setAttribute('src', 'assets/best.png');
     }
   });
   // Replace favicon / apple touch icon
   document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"]').forEach(function (link) {
     const href = link.getAttribute('href');
     if (!href) return;
-    if (href.endsWith('assets/logo.jpeg') || href === 'assets/logo.jpeg') link.setAttribute('href', 'assets/logo.png');
+    if (href && (href.endsWith('assets/logo.jpeg') || href.endsWith('assets/logo.png') || href === 'assets/logo.jpeg' || href === 'assets/logo.png')) link.setAttribute('href', 'assets/best.png');
   });
   // Replace social meta images
   document.querySelectorAll('meta[property="og:image"], meta[name="twitter:image"]').forEach(function (m) {
     const c = m.getAttribute('content');
     if (!c) return;
-    if (c.endsWith('assets/logo.jpeg') || c === 'assets/logo.jpeg') m.setAttribute('content', 'assets/logo.png');
+    if (c && (c.endsWith('assets/logo.jpeg') || c.endsWith('assets/logo.png') || c === 'assets/logo.jpeg' || c === 'assets/logo.png')) m.setAttribute('content', 'assets/best.png');
   });
-  // Insert punchline under header logos if missing
-  try {
-    const punch = 'CLEANING & HOME ORGANIZATION';
-    document.querySelectorAll('a.logo').forEach(function (el) {
-      // avoid duplicating
-      if (el.querySelector('.logo-punchline')) return;
-      const txt = document.createElement('div');
-      txt.className = 'logo-punchline';
-      txt.textContent = punch;
-      // place after the logo-row or image
-      el.appendChild(txt);
-    });
-  } catch (e) { /* non-fatal */ }
   // Normalize header/footer logo images site-wide: add `logo-img`, remove inline styles, ensure png source
   try {
     document.querySelectorAll('img.site-logo').forEach(function (img) {
       img.classList.add('logo-img');
       const s = img.getAttribute('src');
-      if (s && s.endsWith('logo.jpeg')) img.setAttribute('src', 'assets/logo.png');
+      if (s && (s.endsWith('logo.jpeg') || s.endsWith('logo.png'))) img.setAttribute('src', 'assets/best.png');
       // remove inline sizing to allow CSS to control appearance
       img.removeAttribute('style');
     });
@@ -70,7 +188,7 @@ const translations = {
       f6: { title: 'Satisfaction-Focused', desc: "If something isn't right, we return within one day to make it right." }
     },
     services: {
-      eyebrow: 'Signature Services', heading: 'Curated care for every space.', quote: 'Request a Quote',
+      eyebrow: 'Signature Services', heading: 'Curated care for every space.', quote: 'Book Service',
       s1: { title: 'Home Cleaning', desc: 'Comprehensive cleaning of your entire home — bathrooms, kitchen, living spaces and bedrooms, approached with editorial precision.' },
       s2: { title: 'Move-In', desc: 'Begin fresh. A thorough top-to-bottom clean so your new home feels truly yours from the very first day.' },
       s3: { title: 'Move-Out', desc: 'Leave it beautiful. Detailed cleaning to hand over your space in immaculate condition and recover your deposit.' },
@@ -81,7 +199,7 @@ const translations = {
       s8: { title: 'Home Organization', desc: 'Wardrobes, sitting rooms and storage reimagined — systems that bring lasting order and calm to your space.' }
     },
     beforeAfter: {
-      eyebrow: 'Transformations', heading: 'Before & After', note: 'Sample content — placeholder imagery to be replaced with real Elea projects.',
+      eyebrow: 'Transformations', heading: 'Before & After', note: 'Before & After — real Elea project photography showcasing our work.',
       before: 'Before', after: 'After',
       tab1: 'Kitchen', tab2: 'Bathroom', tab3: 'Living Room', tab4: 'Bedroom', tab5: 'Wardrobe', tab6: 'Renovation Cleanup',
       tabs: ['Kitchen', 'Bathroom', 'Living Room', 'Bedroom', 'Wardrobe', 'Renovation Cleanup']
@@ -93,7 +211,7 @@ const translations = {
       b3: 'Organization that brings lasting order, not a temporary fix',
       b4: "A satisfaction guarantee — we return within one day if something isn't right"
     },
-    reviews: { eyebrow: 'Reviews', heading: 'What our clients say.', leave: 'Leave a Review', empty: 'No reviews yet — be the first to share your experience.', placeholder: "Genuine client reviews available on request — we publish verified testimonials after approval. If you'd like to feature client feedback here, add them via the admin panel or link to external review platforms.", request: 'Request Testimonials' },
+    reviews: { eyebrow: 'Reviews', heading: 'What our clients say.', leave: 'Leave a Review', empty: 'No reviews yet.', placeholder: 'Verified client testimonials appear here.', request: 'Request Testimonials' },
     satisfaction: { heading: 'Our Satisfaction Promise', body: 'If you are not fully satisfied with any service, Elea will return within one day to address your concerns — free of charge for minor corrections, or at a fair rate for larger revisions. Your home, and your peace of mind, are our commitment.' },
     contact: { eyebrow: 'Contact', heading: 'Get in touch.', phone: 'Phone', email: 'Email', whatsapp: 'WhatsApp', instagram: 'Instagram' },
     footer: { tagline: 'Cleaning & Home Organization', rights: 'All rights reserved.' },
@@ -122,6 +240,37 @@ const translations = {
       ]
     },
     about: { eyebrow: 'About Elea', heading: 'Founded on care and detail.', body1: 'Elea was founded by Joan Kayaga in Berlin with a simple conviction: that a clean, organized home is the foundation of a calmer, more intentional life.', body2: 'What began as a commitment to meticulous, respectful home care has grown into a full-service home organization brand — one that treats every home as a space worthy of genuine attention. From routine cleaning to complete wardrobe transformations, Elea approaches each visit with the same editorial standard: nothing overlooked, nothing rushed.', body3: 'We believe home care is not a transaction but a relationship. We learn your space, respect your routines, and return with consistency — so your home always feels cared for, never just cleaned.', founderRole: 'Founder of Elea', valuesHeading: 'What guides us' },
+    terms: {
+      eyebrow: 'Legal',
+      title: 'Terms & Conditions',
+      s1: { title: '1. Scope of Services', body: 'ELEA provides residential cleaning and home organization services in Berlin. The scope of each appointment is confirmed during the inquiry and booking conversation.' },
+      s2: { title: '2. Client Responsibilities', body: 'Clients are responsible for providing access to the property and ensuring safe and reasonable conditions for the team to work.' },
+      s3: { title: '3. Payment', body: 'Services are billed according to the agreed scope and time. Additional work beyond the original arrangement may be quoted separately.' },
+      s4: { title: '4. Cancellations', body: 'Cancellations and rescheduling must be communicated promptly. Standard policies apply in line with ELEA’s booking terms.' }
+    },
+    cancellation: {
+      eyebrow: 'Legal',
+      title: 'Booking & Cancellation',
+      s1: { title: 'Booking Process', body: 'To book an ELEA service, you may contact us via phone, email, WhatsApp or the booking form on this website. We confirm availability and service details before the appointment is finalized.' },
+      s2: { title: 'Cancellation Policy', body: 'We understand schedules change. If you need to cancel or reschedule your booking, please contact us as soon as possible. We will do our best to accommodate a new time slot.' },
+      s3: { title: 'Late Arrivals', body: 'Late arrivals may affect the appointment duration and therefore the service completion time. We appreciate your understanding and will communicate any changes as clearly as possible.' }
+    },
+    impressum: {
+      eyebrow: 'Legal',
+      title: 'Imprint',
+      s1: { title: 'Provider Information', body: 'Elea Cleaning & Home Organization\nJoan Kayaga\n[Street Address]\n[Postal Code] Berlin\nGermany' },
+      s2: { title: 'Contact', body: 'Phone: +49 152 16019843\nEmail: eleacleaning@gmail.com' },
+      s3: { title: 'VAT ID', body: 'VAT identification number according to §27a VAT Act: [To be provided]' },
+      s4: { title: 'Responsible for content', body: 'Joan Kayaga\neleacleaning@gmail.com' }
+    },
+    datenschutz: {
+      eyebrow: 'Legal',
+      title: 'Privacy Policy',
+      s1: { title: '1. Privacy at a glance', body: 'Protecting your personal data is important to us. This privacy policy informs you about the collection, processing and use of your data when using our website and services.' },
+      s2: { title: '2. Controller', body: 'Controller for data processing: Elea Cleaning & Home Organization, Joan Kayaga, eleacleaning@gmail.com' },
+      s3: { title: '3. Data Collection', body: 'We collect data you provide in booking inquiries, including name, contact details and information about your home. This data is used only to process your request.' },
+      s4: { title: '4. Your rights', body: 'You have the right to access, rectify, erase and restrict processing of your personal data.' }
+    },
     legalPages: { impressum: 'Impressum', datenschutz: 'Datenschutzerklärung', terms: 'Terms & Conditions', cancellation: 'Booking & Cancellation' },
     auth: { login: { title: 'Welcome back', subtitle: 'Log in to your account', footer: 'Don\'t have an account?', create: 'Create one', or: 'or', g: 'Continue with Google', email: 'Email', password: 'Password', forgot: 'Forgot password?', submitLabel: 'Log in', loading: 'Logging in...' }, register: { title: 'Create your account', subtitle: 'Sign up to get started', footer: 'Already have an account?', login: 'Log in', or: 'or', g: 'Continue with Google', email: 'Email', password: 'Password', confirm: 'Confirm Password', submitLabel: 'Create account', loading: 'Creating account...' }, verify: { title: 'Verify your email', subtitle: 'We sent a code to', resend: 'Resend', verify: 'Verify', verifying: 'Verifying...' }, forgot: { title: 'Forgot your password?', subtitle: 'We\'ll send a reset link to your email', submit: 'Send reset link', email: 'Email', success: 'If an account exists for that email, we\'ve sent a reset link.' }, reset: { title: 'Reset your password', subtitle: 'Choose a new password', new: 'New password', confirm: 'Confirm password', submit: 'Reset password' } },
     admin: { bookings: 'Bookings', reviews: 'Reviews', settings: 'Settings' },
@@ -140,7 +289,7 @@ const translations = {
       f6: { title: 'Zufriedenheitsorientiert', desc: 'Wenn etwas nicht stimmt, kommen wir innerhalb eines Tages zurück, um es zu korrigieren.' }
     },
     services: {
-      eyebrow: 'Signature-Leistungen', heading: 'Kuratierte Pflege für jeden Raum.', quote: 'Angebot anfragen',
+      eyebrow: 'Signature-Leistungen', heading: 'Kuratierte Pflege für jeden Raum.', quote: 'Service buchen',
       s1: { title: 'Hausreinigung', desc: 'Umfassende Reinigung Ihres gesamten Zuhauses — Badezimmer, Küche, Wohnräume und Schlafzimmer, mit redaktioneller Präzision.' },
       s2: { title: 'Einzug', desc: 'Frisch beginnen. Eine gründliche Reinigung von oben bis unten, damit sich Ihr neues Zuhause vom ersten Tag an wirklich als Ihres anfühlt.' },
       s3: { title: 'Auszug', desc: 'Hinterlassen Sie es makellos. Detaillierte Reinigung zur Übergabe Ihres Raums in einwandfreiem Zustand und zur Sicherung Ihrer Kaution.' },
@@ -151,7 +300,7 @@ const translations = {
       s8: { title: 'Hausorganisation', desc: 'Kleiderschränke, Wohnräume und Stauraum neu gedacht — Systeme, die dauerhafte Ordnung und Ruhe in Ihren Raum bringen.' }
     },
     beforeAfter: {
-      eyebrow: 'Verwandlungen', heading: 'Vor & Nachher', note: 'Beispielinhalt — Platzhalterbilder werden durch echte Elea-Projekte ersetzt.',
+      eyebrow: 'Verwandlungen', heading: 'Vor & Nachher', note: 'Vor & Nachher — echte Elea-Projektfotografie, die unsere Arbeit zeigt.',
       before: 'Vorher', after: 'Nachher',
       tab1: 'Küche', tab2: 'Badezimmer', tab3: 'Wohnzimmer', tab4: 'Schlafzimmer', tab5: 'Kleiderschrank', tab6: 'Renovierung',
       tabs: ['Küche', 'Badezimmer', 'Wohnzimmer', 'Schlafzimmer', 'Kleiderschrank', 'Renovierung']
@@ -163,7 +312,7 @@ const translations = {
       b3: 'Organisation, die dauerhafte Ordnung schafft — keine kurzfristige Lösung',
       b4: 'Eine Zufriedenheitsgarantie — wir kommen innerhalb eines Tages zurück, wenn etwas nicht stimmt'
     },
-    reviews: { eyebrow: 'Bewertungen', heading: 'Was unsere Kunden sagen.', leave: 'Bewertung abgeben', empty: 'Noch keine Bewertungen — teilen Sie Ihre Erfahrung als Erste.', placeholder: 'Echte Kundenbewertungen auf Anfrage verfügbar — wir veröffentlichen verifizierte Erfahrungsberichte nach Genehmigung. Wenn Sie hier Kundenfeedback zeigen möchten, fügen Sie es über das Admin-Panel hinzu oder verlinken Sie externe Bewertungsplattformen.', request: 'Erfahrungsberichte anfragen' },
+    reviews: { eyebrow: 'Bewertungen', heading: 'Was unsere Kunden sagen.', leave: 'Bewertung abgeben', empty: 'Noch keine Bewertungen.', placeholder: 'Verifizierte Kundenbewertungen erscheinen hier.', request: 'Erfahrungsberichte anfragen' },
     satisfaction: { heading: 'Unsere Zufriedenheitsgarantie', body: 'Wenn Sie mit einer Leistung nicht vollständig zufrieden sind, kommt Elea innerhalb eines Tages zurück, um Ihre Anliegen zu klären — kostenlos für kleinere Korrekturen oder zu einem fairen Preis für größere Überarbeitungen. Ihr Zuhause und Ihre Ruhe sind unser Versprechen.' },
     contact: { eyebrow: 'Kontakt', heading: 'Treten Sie in Kontakt.', phone: 'Telefon', email: 'E-Mail', whatsapp: 'WhatsApp', instagram: 'Instagram' },
     footer: { tagline: 'Reinigung & Hausorganisation', rights: 'Alle Rechte vorbehalten.' },
@@ -192,7 +341,38 @@ const translations = {
       ]
     },
     about: { eyebrow: 'Über Elea', heading: 'Gegründet auf Pflege und Detail.', body1: 'Elea wurde von Joan Kayaga in Berlin mit einer einfachen Überzeugung gegründet: dass ein sauberes, organisiertes Zuhause die Grundlage eines ruhigeren, bewussteren Lebens ist.', body2: 'Was als Engagement für sorgfältige, respektvolle Hauspflege begann, ist zu einer Vollservice-Hausorganisationsmarke herangewachsen — die jedes Zuhause als einen Raum behandelt, der echter Aufmerksamkeit würdig ist.', body3: 'Wir glauben, dass Hauspflege keine Transaktion ist, sondern eine Beziehung. Wir lernen Ihren Raum kennen, respektieren Ihre Routinen und kehren beständig zurück — damit Ihr Zuhause sich immer betreut anfühlt, nie nur gereinigt.', founderRole: 'Gründerin von Elea', valuesHeading: 'Was uns leitet' },
-    legalPages: { impressum: 'Impressum', datenschutz: 'Datenschutzerklärung', terms: 'AGB', cancellation: 'Buchung & Stornierung' },
+    terms: {
+      eyebrow: 'Rechtliches',
+      title: 'AGB',
+      s1: { title: '1. Leistungsumfang', body: 'ELEA erbringt wohnwirtschaftliche Reinigungs- und Hausorganisationsleistungen in Berlin. Der Umfang jedes Termins wird im Rahmen der Anfrage und Buchung abgestimmt.' },
+      s2: { title: '2. Pflichten der Kundin / des Kunden', body: 'Kundinnen und Kunden sind dafür verantwortlich, Zugang zur Immobilie zu ermöglichen und sichere sowie zumutbare Arbeitsbedingungen zu gewährleisten.' },
+      s3: { title: '3. Zahlung', body: 'Leistungen werden nach vereinbartem Umfang und Zeitaufwand abgerechnet. Zusätzliche Arbeiten können gesondert berechnet werden.' },
+      s4: { title: '4. Stornierung', body: 'Stornierungen und Terminänderungen sind zeitnah mitzuteilen. Es gelten die in den Buchungsbedingungen genannten Regelungen.' }
+    },
+    cancellation: {
+      eyebrow: 'Rechtliches',
+      title: 'Buchung & Stornierung',
+      s1: { title: 'Buchungsprozess', body: 'Um einen ELEA-Service zu buchen, können Sie uns telefonisch, per E-Mail, WhatsApp oder über das Buchungsformular auf dieser Website kontaktieren. Wir bestätigen Verfügbarkeit und Leistungsdetails, bevor der Termin finalisiert wird.' },
+      s2: { title: 'Stornierungsbedingungen', body: 'Wir verstehen, dass sich Pläne ändern können. Wenn Sie eine Buchung stornieren oder verschieben müssen, kontaktieren Sie uns bitte so bald wie möglich. Wir bemühen uns, einen neuen Termin zu ermöglichen.' },
+      s3: { title: 'Verspätete Ankunft', body: 'Verspätete Ankünfte können die Dauer des Termins und damit die Fertigstellung der Leistung beeinträchtigen. Wir danken für Ihr Verständnis und werden Änderungen klar kommunizieren.' }
+    },
+    impressum: {
+      eyebrow: 'Rechtliches',
+      title: 'Impressum',
+      s1: { title: 'Angaben gemäß § 5 TMG', body: 'Elea Cleaning & Home Organization\nJoan Kayaga\n[Strasse und Hausnummer]\n[PLZ] Berlin\nDeutschland' },
+      s2: { title: 'Kontakt', body: 'Telefon: +49 152 16019843\nE-Mail: eleacleaning@gmail.com' },
+      s3: { title: 'Umsatzsteuer-ID', body: 'Umsatzsteuer-Identifikationsnummer gemäß § 27a Umsatzsteuergesetz: [wird noch bereitgestellt]' },
+      s4: { title: 'Verantwortlich für den Inhalt', body: 'Joan Kayaga\neleacleaning@gmail.com' }
+    },
+    datenschutz: {
+      eyebrow: 'Rechtliches',
+      title: 'Datenschutzerklärung',
+      s1: { title: '1. Datenschutz auf einen Blick', body: 'Der Schutz Ihrer persönlichen Daten ist uns wichtig. Diese Datenschutzerklärung informiert Sie über die Erhebung, Verarbeitung und Nutzung Ihrer Daten bei der Nutzung unserer Website und Dienste.' },
+      s2: { title: '2. Verantwortliche Stelle', body: 'Verantwortlich für die Datenverarbeitung: Elea Cleaning & Home Organization, Joan Kayaga, eleacleaning@gmail.com' },
+      s3: { title: '3. Datenerhebung', body: 'Wir erheben Daten, die Sie uns im Rahmen einer Buchungsanfrage zur Verfügung stellen, einschließlich Name, Kontaktdaten und Angaben zu Ihrer Wohnung. Diese Daten werden ausschließlich zur Bearbeitung Ihrer Anfrage verwendet.' },
+      s4: { title: '4. Ihre Rechte', body: 'Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung Ihrer personenbezogenen Daten.' }
+    },
+    legalPages: { impressum: 'Impressum', datenschutz: 'Datenschutz', terms: 'AGB', cancellation: 'Buchung & Stornierung' },
     auth: { login: { title: 'Willkommen zurück', subtitle: 'Melden Sie sich bei Ihrem Konto an', footer: 'Sie haben noch kein Konto?', create: 'Erstellen Sie eines', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', forgot: 'Passwort vergessen?', submitLabel: 'Anmelden', loading: 'Anmeldung...' }, register: { title: 'Konto erstellen', subtitle: 'Registrieren Sie sich, um loszulegen', footer: 'Sie haben bereits ein Konto?', login: 'Anmelden', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', confirm: 'Passwort bestätigen', submitLabel: 'Konto erstellen', loading: 'Erstellen...' }, verify: { title: 'E-Mail verifizieren', subtitle: 'Wir haben einen Code an', resend: 'Erneut senden', verify: 'Verifizieren', verifying: 'Verifizieren...' }, forgot: { title: 'Passwort vergessen?', subtitle: 'Wir senden Ihnen einen Link zum Zurücksetzen', submit: 'Link senden', email: 'E-Mail', success: 'Wenn ein Konto für diese E-Mail existiert, haben wir einen Link zum Zurücksetzen gesendet.' }, reset: { title: 'Passwort zurücksetzen', subtitle: 'Wählen Sie ein neues Passwort', new: 'Neues Passwort', confirm: 'Passwort bestätigen', submit: 'Passwort zurücksetzen' } },
     admin: { bookings: 'Buchungen', reviews: 'Bewertungen', settings: 'Einstellungen' },
     common: { continue: 'Weiter', back: 'Zurück', save: 'Speichern', close: 'Schließen' }
@@ -258,6 +438,24 @@ function applyTranslations() {
   if (modal && modal.classList.contains('open') && modal.bookingState) {
     renderBookingModal();
   }
+
+  // Update footer services list (keep an internal service key for booking behavior)
+  try {
+    const footerServices = document.querySelectorAll('.footer-services-list a');
+    if (footerServices && serviceData && serviceData.length) {
+      footerServices.forEach((link, idx) => {
+        const svc = serviceData[idx];
+        if (svc) {
+          // store canonical service key so booking modal can open the correct English key
+          link.dataset.serviceKey = svc.key;
+          // set translated label
+          if (svc.titleKey) link.textContent = t(svc.titleKey);
+        }
+      });
+    }
+    const fsTitle = document.querySelector('.footer-services .footer-services-title');
+    if (fsTitle) fsTitle.textContent = t('services.eyebrow') || fsTitle.textContent;
+  } catch (e) { /* non-fatal */ }
 }
 
 function initNavbar() {
@@ -324,7 +522,7 @@ function initServiceButtons() {
   document.querySelectorAll('.footer-services-list a').forEach((link) => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
-      const svc = link.textContent.trim();
+      const svc = link.dataset.serviceKey || link.textContent.trim();
       openBookingModal(svc);
     });
   });
@@ -394,8 +592,24 @@ function initReviewModal() {
     const service = document.getElementById('review-service');
     const review = document.getElementById('review-text');
     if (!name.value.trim() || !review.value.trim()) return;
+
+    const state = getAdminState();
+    state.reviews.unshift({
+      id: `review-${Date.now()}`,
+      name: name.value.trim(),
+      service: service.value.trim() || 'General Service',
+      rating,
+      text: review.value.trim(),
+      status: 'pending'
+    });
+    saveAdminState(state);
+
     form.classList.add('hidden');
     thanks.classList.remove('hidden');
+    renderHomepageContent();
+    if (document.body.dataset.adminTab === 'reviews') {
+      renderAdminDashboard();
+    }
   });
 }
 
@@ -487,6 +701,11 @@ function renderBookingModal() {
     </div>
   `;
   lucide.createIcons();
+  if (state.loading) {
+    modal.querySelectorAll('.booking-submit-button').forEach((btn) => {
+      try { btn.disabled = true; btn.classList.add('disabled'); btn.textContent = 'Submitting...'; } catch (e) { /* ignore */ }
+    });
+  }
   modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal);
   modal.querySelector('[data-booking-back]')?.addEventListener('click', () => {
     if (state.step > 0) {
@@ -746,9 +965,65 @@ function submitBookingModal() {
     renderBookingModal();
     return;
   }
-  modal.bookingState.reference = generateReference();
-  modal.bookingState.success = true;
-  renderBookingModal();
+  // generate a reference and attempt to POST booking to configured endpoint
+  state.reference = generateReference();
+  const payload = {
+    reference: state.reference,
+    services: state.selectedServices,
+    rooms: state.rooms,
+    areas: state.areas,
+    cleaningType: state.cleaningType,
+    date: state.date,
+    time: state.time,
+    details: state.details
+  };
+
+  const endpoint = defaults.bookingEndpoint;
+  if (endpoint && endpoint.trim()) {
+    // optimistic UI: show loading state inside modal
+    state.loading = true;
+    renderBookingModal();
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then((res) => res.json()).then((data) => {
+      state.loading = false;
+      if (data && data.success) {
+        // server may return canonical reference
+        state.reference = data.reference || state.reference;
+        state.success = true;
+      } else {
+        state.errors.general = data && data.error ? data.error : 'Failed to submit booking. Please try again.';
+      }
+      renderBookingModal();
+    }).catch((err) => {
+      state.loading = false;
+      state.errors.general = 'Network error while submitting booking. Please try again later.';
+      console.error('Booking submit error', err);
+      renderBookingModal();
+    });
+  } else {
+    // no endpoint configured — fallback to local success flow
+    console.warn('No bookingEndpoint configured in defaults; using local success flow.');
+    const adminState = getAdminState();
+    adminState.bookings.unshift({
+      id: `booking-${Date.now()}`,
+      reference: state.reference,
+      name: state.details.fullName || 'Guest',
+      service: state.selectedServices.join(', ') || 'General booking',
+      rooms: state.rooms || '-',
+      date: state.date || new Date().toISOString().slice(0, 10),
+      status: 'pending',
+      details: { ...state.details }
+    });
+    saveAdminState(adminState);
+    state.success = true;
+    renderBookingModal();
+    renderAdminDashboard();
+    initAdminCalendar();
+    updateAdminTabBadges();
+  }
 }
 
 function generateReference() {
@@ -775,10 +1050,224 @@ function initFloatingWhatsApp() {
   });
 }
 
-function initAdminPage() {
-  const tabs = ['bookings', 'reviews', 'settings'];
-  const active = document.body.dataset.adminTab || 'bookings';
+function renderHomepageContent() {
+  const state = getAdminState();
 
+  const promoTarget = document.getElementById('promo-cards');
+  if (promoTarget) {
+    const promos = (state.ctas || []).filter((promo) => promo.active !== false);
+    if (!promos.length) {
+      promoTarget.innerHTML = '<div class="reviews-placeholder"><p class="elea-body">No active promotions right now.</p></div>';
+    } else {
+      promoTarget.innerHTML = promos.map((promo) => `
+        <article class="promo-card">
+          <img src="${promo.image || 'assets/images/kitchen.png'}" alt="${escapeHtml(promo.title)}" />
+          <div class="promo-card-body">
+            <span class="promo-eyebrow">Featured</span>
+            <h3>${escapeHtml(promo.title)}</h3>
+            <p>${escapeHtml(promo.text)}</p>
+            <a href="${escapeHtml(promo.link || 'https://wa.me/4915216019843')}" target="_blank" rel="noreferrer">${escapeHtml(promo.cta || 'Book now')}</a>
+          </div>
+        </article>
+      `).join('');
+    }
+  }
+
+  const reviewsTarget = document.querySelector('.reviews-grid');
+  if (reviewsTarget) {
+    const approved = (state.reviews || []).filter((review) => review.status === 'approved');
+    if (!approved.length) {
+      reviewsTarget.innerHTML = `
+        <div class="reviews-placeholder">
+          <p class="elea-body">Verified client testimonials appear here. Submit feedback to have your review featured.</p>
+          <a class="elea-button-outline" href="contact.html">Request Testimonials</a>
+        </div>
+      `;
+      return;
+    }
+
+    reviewsTarget.innerHTML = approved.slice(0, 3).map((review) => `
+      <article class="review-item-card">
+        <div class="review-topline">
+          <div class="review-name">${escapeHtml(review.name)}</div>
+          <span class="review-rating">${'★'.repeat(review.rating || 5)}${'☆'.repeat(Math.max(0, 5 - (review.rating || 5)))}</span>
+        </div>
+        <div class="review-service">${escapeHtml(review.service)}</div>
+        <p>“${escapeHtml(review.text)}”</p>
+      </article>
+    `).join('');
+  }
+}
+
+function renderAdminDashboard(selectedDate = document.body.dataset.calendarDate || '') {
+  const state = getAdminState();
+
+  const bookingTarget = document.getElementById('admin-bookings-list');
+  if (bookingTarget) {
+    const bookings = state.bookings || [];
+    const visibleBookings = selectedDate ? bookings.filter((booking) => (booking.date || '').slice(0, 10) === selectedDate) : bookings;
+    const stats = `
+      <div class="admin-stat-grid">
+        <div class="admin-stat-card"><span>Total</span><strong>${visibleBookings.length}</strong></div>
+        <div class="admin-stat-card"><span>Pending</span><strong>${visibleBookings.filter((booking) => booking.status !== 'confirmed').length}</strong></div>
+        <div class="admin-stat-card"><span>Confirmed</span><strong>${visibleBookings.filter((booking) => booking.status === 'confirmed').length}</strong></div>
+      </div>
+    `;
+
+    bookingTarget.innerHTML = visibleBookings.length ? stats + visibleBookings.map((booking) => `
+      <article class="admin-card admin-booking-card">
+        <div class="admin-card-top">
+          <div class="admin-card-ref">${escapeHtml(booking.reference || booking.id)}</div>
+          <span class="status-badge ${booking.status === 'confirmed' ? 'status-confirmed' : booking.status === 'pending' ? 'status-pending' : 'status-new'}">${escapeHtml(booking.status || 'new')}</span>
+        </div>
+        <div class="admin-card-meta">${escapeHtml(booking.name || 'Guest')}</div>
+        <div class="admin-card-services">${escapeHtml(booking.service || 'General booking')}</div>
+        <div class="booking-meta-row">
+          <span>${escapeHtml(booking.date || 'TBD')}</span>
+          <span>${escapeHtml(booking.rooms || '-')} rooms</span>
+        </div>
+        <div class="booking-action-row">
+          <button class="action-btn approve" type="button" data-booking-action="confirm" data-booking-action-id="${escapeHtml(booking.id)}">Confirm</button>
+          <button class="action-btn delete" type="button" data-booking-action="delete" data-booking-action-id="${escapeHtml(booking.id)}">Delete</button>
+        </div>
+      </article>
+    `).join('') : stats + '<div class="admin-note">' + (selectedDate ? `No bookings recorded for ${selectedDate}.` : 'No bookings recorded yet.') + '</div>';
+  }
+
+  const reviewTarget = document.getElementById('admin-reviews-list');
+  if (reviewTarget) {
+    const reviews = state.reviews || [];
+    reviewTarget.innerHTML = reviews.length ? reviews.map((review) => `
+      <article class="admin-review-card">
+        <div class="admin-card-top">
+          <div class="admin-card-ref">${escapeHtml(review.name)}</div>
+          <span class="status-badge ${review.status === 'approved' ? 'status-confirmed' : 'status-pending'}">${escapeHtml(review.status || 'pending')}</span>
+        </div>
+        <div class="admin-card-meta">${'★'.repeat(review.rating || 5)}${'☆'.repeat(Math.max(0, 5 - (review.rating || 5)))} · ${escapeHtml(review.service)}</div>
+        <div class="admin-card-services">“${escapeHtml(review.text)}”</div>
+        <div class="review-actions">
+          <button class="action-btn approve" type="button" data-review-action="approve" data-review-id="${escapeHtml(review.id)}"><i data-lucide="check"></i> ${review.status === 'approved' ? 'Approved' : 'Approve'}</button>
+          <button class="action-btn delete" type="button" data-review-action="delete" data-review-id="${escapeHtml(review.id)}"><i data-lucide="trash-2"></i> Delete</button>
+        </div>
+      </article>
+    `).join('') : '<div class="admin-note">No review submissions yet.</div>';
+    if (window.lucide) lucide.createIcons();
+  }
+
+  const assetsTarget = document.getElementById('admin-assets-list');
+  if (assetsTarget) {
+    const assets = state.assets || [];
+    assetsTarget.innerHTML = assets.length ? assets.map((asset) => `
+      <div class="asset-card">
+        <img src="${asset.path || 'assets/images/kitchen.png'}" alt="${escapeHtml(asset.name)}" onerror="this.onerror=null;this.src='assets/best.png';" />
+        <div class="asset-card-meta">
+          <strong>${escapeHtml(asset.name)}</strong>
+          <div class="asset-path">${escapeHtml(asset.path || '')}</div>
+          <div class="asset-actions">
+            <button type="button" class="asset-btn" data-asset-toggle="${escapeHtml(asset.id)}">${asset.active === false ? 'Enable' : 'Disable'}</button>
+            <button type="button" class="asset-btn danger" data-asset-remove="${escapeHtml(asset.id)}">Remove</button>
+          </div>
+        </div>
+      </div>
+    `).join('') : '<div class="admin-note">No asset images yet.</div>';
+  }
+
+  const ctaTarget = document.getElementById('admin-cta-list');
+  if (ctaTarget) {
+    const ctas = state.ctas || [];
+    ctaTarget.innerHTML = ctas.length ? ctas.map((cta) => `
+      <div class="promo-admin-card">
+        <img src="${cta.image || 'assets/images/kitchen.png'}" alt="${escapeHtml(cta.title)}" />
+        <div class="promo-admin-body">
+          <div class="promo-admin-header">
+            <h3>${escapeHtml(cta.title)}</h3>
+            <span class="status-badge ${cta.active === false ? 'status-cancelled' : 'status-confirmed'}">${cta.active === false ? 'hidden' : 'live'}</span>
+          </div>
+          <p>${escapeHtml(cta.text)}</p>
+          <div class="cta-admin-actions">
+            <button type="button" class="asset-btn" data-cta-toggle="${escapeHtml(cta.id)}">${cta.active === false ? 'Show on site' : 'Hide from site'}</button>
+          </div>
+        </div>
+      </div>
+    `).join('') : '<div class="admin-note">No promo cards yet.</div>';
+  }
+
+  const settingsForm = document.getElementById('admin-settings-form');
+  if (settingsForm) {
+    const fields = settingsForm.querySelectorAll('input, textarea');
+    fields.forEach((field) => {
+      if (field.name === 'businessName') field.value = state.site.businessName || 'ELEA';
+      if (field.name === 'phone') field.value = state.site.phone || defaults.phone;
+      if (field.name === 'email') field.value = state.site.email || defaults.email;
+      if (field.name === 'whatsapp') field.value = state.site.whatsapp || defaults.whatsapp;
+      if (field.name === 'instagram') field.value = state.site.instagram || defaults.instagram;
+      if (field.name === 'footerText') field.value = state.site.footerText || 'Cleaning & Home Organization';
+    });
+  }
+
+  updateAdminTabBadges();
+}
+
+function updateAdminTabBadges() {
+  const state = getAdminState();
+  const bookingCount = (state.bookings || []).length;
+  const reviewCount = (state.reviews || []).filter((review) => review.status !== 'approved').length;
+  const promoCount = (state.ctas || []).filter((cta) => cta.active !== false).length;
+
+  document.querySelectorAll('[data-admin-tab]').forEach((button) => {
+    const target = button.dataset.adminTab;
+    if (target === 'bookings') {
+      button.querySelector('.tab-badge')?.replaceChildren(document.createTextNode(String(bookingCount)));
+    }
+    if (target === 'reviews') {
+      button.querySelector('.tab-badge')?.replaceChildren(document.createTextNode(String(reviewCount)));
+    }
+    if (target === 'promos') {
+      button.querySelector('.tab-badge')?.replaceChildren(document.createTextNode(String(promoCount)));
+    }
+    if (target === 'assets' || target === 'settings') {
+      button.querySelector('.tab-badge')?.replaceChildren(document.createTextNode(''));
+    }
+  });
+}
+
+async function writeAssetToProjectDirectory(file) {
+  const safeName = (file.name || 'asset-image.png')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9._-]/g, '-');
+  const targetPath = `assets/images/${safeName}`;
+  const statusNode = document.getElementById('admin-asset-status');
+
+  if (!('showDirectoryPicker' in window) || !window.isSecureContext) {
+    if (statusNode) {
+      statusNode.textContent = 'Folder access is unavailable in this browser. The image path has been prepared for manual copy into assets/images.';
+    }
+    return targetPath;
+  }
+
+  try {
+    const projectRoot = await window.showDirectoryPicker({ mode: 'readwrite' });
+    const assetsDir = await projectRoot.getDirectoryHandle('assets', { create: true });
+    const imagesDir = await assetsDir.getDirectoryHandle('images', { create: true });
+    const fileHandle = await imagesDir.getFileHandle(safeName, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(await file.arrayBuffer());
+    await writable.close();
+    if (statusNode) {
+      statusNode.textContent = `Saved to ${targetPath}.`;
+    }
+    return targetPath;
+  } catch (error) {
+    console.warn('Unable to save asset directly to project directory:', error);
+    if (statusNode) {
+      statusNode.textContent = 'Direct folder save was blocked. Please confirm the target path manually or select the project folder again.';
+    }
+    return targetPath;
+  }
+}
+
+function initAdminPage() {
   document.querySelectorAll('[data-admin-tab]').forEach((button) => {
     button.addEventListener('click', () => {
       const target = button.dataset.adminTab;
@@ -790,9 +1279,238 @@ function initAdminPage() {
     });
   });
 
-  document.querySelector('[data-admin-logout]')?.addEventListener('click', () => {
-    localStorage.removeItem('elea-admin');
+  const searchInput = document.querySelector('.admin-search input');
+  searchInput?.addEventListener('input', (event) => {
+    const query = event.target.value.trim().toLowerCase();
+    const target = document.body.dataset.adminTab || 'bookings';
+    const list = document.getElementById(target === 'bookings' ? 'admin-bookings-list' : target === 'reviews' ? 'admin-reviews-list' : target === 'promos' ? 'admin-cta-list' : 'admin-bookings-list');
+    if (!list) return;
+    const rows = [...list.querySelectorAll('.admin-card, .admin-review-card, .promo-admin-card, .asset-card')];
+    rows.forEach((row) => {
+      const text = (row.textContent || '').toLowerCase();
+      row.style.display = text.includes(query) ? '' : 'none';
+    });
   });
+
+  const settingsForm = document.getElementById('admin-settings-form');
+  settingsForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const state = getAdminState();
+    state.site.businessName = settingsForm.businessName.value.trim() || 'ELEA';
+    state.site.phone = settingsForm.phone.value.trim() || defaults.phone;
+    state.site.email = settingsForm.email.value.trim() || defaults.email;
+    state.site.whatsapp = settingsForm.whatsapp.value.trim() || defaults.whatsapp;
+    state.site.instagram = settingsForm.instagram.value.trim() || defaults.instagram;
+    state.site.footerText = settingsForm.footerText.value.trim() || 'Cleaning & Home Organization';
+    saveAdminState(state);
+    applyAdminSiteValues();
+    renderHomepageContent();
+    renderAdminDashboard();
+  });
+
+  const assetForm = document.getElementById('admin-asset-form');
+  const assetUpload = document.getElementById('admin-asset-upload');
+
+  assetUpload?.addEventListener('change', async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const pathInput = document.getElementById('admin-asset-path');
+    if (!pathInput) return;
+    const savedPath = await writeAssetToProjectDirectory(file);
+    pathInput.value = savedPath;
+  });
+
+  assetForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const state = getAdminState();
+    const name = assetForm.assetName.value.trim();
+    const path = assetForm.assetPath.value.trim();
+    if (!name || !path) return;
+    state.assets.unshift({ id: `asset-${Date.now()}`, name, path, active: true });
+    saveAdminState(state);
+    assetForm.reset();
+    const statusNode = document.getElementById('admin-asset-status');
+    if (statusNode) statusNode.textContent = '';
+    renderAdminDashboard();
+  });
+
+  const ctaForm = document.getElementById('admin-cta-form');
+  ctaForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const state = getAdminState();
+    const title = ctaForm.ctaTitle.value.trim();
+    const text = ctaForm.ctaText.value.trim();
+    const link = ctaForm.ctaLink.value.trim();
+    const image = ctaForm.ctaImage.value.trim();
+    if (!title || !text) return;
+    state.ctas.unshift({
+      id: `cta-${Date.now()}`,
+      title,
+      text,
+      link: link || 'https://wa.me/4915216019843',
+      image: image || 'assets/images/kitchen.png',
+      cta: 'Book now',
+      active: true
+    });
+    saveAdminState(state);
+    ctaForm.reset();
+    renderHomepageContent();
+    renderAdminDashboard();
+  });
+
+  document.addEventListener('click', (event) => {
+    const bookingAction = event.target.closest('[data-booking-action]');
+    if (bookingAction) {
+      const state = getAdminState();
+      const id = bookingAction.dataset.bookingActionId;
+      const action = bookingAction.dataset.bookingAction;
+      if (action === 'confirm') {
+        const item = state.bookings.find((entry) => entry.id === id);
+        if (item) item.status = 'confirmed';
+      }
+      if (action === 'delete') {
+        state.bookings = (state.bookings || []).filter((item) => item.id !== id);
+      }
+      saveAdminState(state);
+      renderAdminDashboard();
+      initAdminCalendar();
+      updateAdminTabBadges();
+      return;
+    }
+
+    const reviewAction = event.target.closest('[data-review-action]');
+    if (reviewAction) {
+      const state = getAdminState();
+      const id = reviewAction.dataset.reviewId;
+      if (reviewAction.dataset.reviewAction === 'approve') {
+        const review = state.reviews.find((item) => item.id === id);
+        if (review) review.status = 'approved';
+      }
+      if (reviewAction.dataset.reviewAction === 'delete') {
+        state.reviews = state.reviews.filter((item) => item.id !== id);
+      }
+      saveAdminState(state);
+      renderHomepageContent();
+      renderAdminDashboard();
+      updateAdminTabBadges();
+      return;
+    }
+
+    const assetToggle = event.target.closest('[data-asset-toggle]');
+    if (assetToggle) {
+      const state = getAdminState();
+      const item = state.assets.find((asset) => asset.id === assetToggle.dataset.assetToggle);
+      if (item) item.active = item.active === false;
+      saveAdminState(state);
+      renderAdminDashboard();
+      return;
+    }
+
+    const assetRemove = event.target.closest('[data-asset-remove]');
+    if (assetRemove) {
+      const state = getAdminState();
+      state.assets = (state.assets || []).filter((asset) => asset.id !== assetRemove.dataset.assetRemove);
+      saveAdminState(state);
+      renderAdminDashboard();
+      return;
+    }
+
+    const ctaToggle = event.target.closest('[data-cta-toggle]');
+    if (ctaToggle) {
+      const state = getAdminState();
+      const item = state.ctas.find((cta) => cta.id === ctaToggle.dataset.ctaToggle);
+      if (item) item.active = item.active === false;
+      saveAdminState(state);
+      renderHomepageContent();
+      renderAdminDashboard();
+      updateAdminTabBadges();
+      return;
+    }
+  });
+
+  document.querySelectorAll('[data-admin-logout]').forEach((button) => {
+    button.addEventListener('click', () => {
+      localStorage.removeItem(ADMIN_STORAGE_KEY);
+      const resetState = getDefaultAdminState();
+      saveAdminState(resetState);
+      renderHomepageContent();
+      renderAdminDashboard();
+      initAdminCalendar();
+      updateAdminTabBadges();
+    });
+  });
+
+  renderAdminDashboard();
+  updateAdminTabBadges();
+}
+
+function initAdminCalendar() {
+  const el = document.getElementById('admin-calendar');
+  if (!el) return;
+  const state = getAdminState();
+  const selectedDate = document.body.dataset.calendarDate || '';
+  const monthDate = new Date();
+  const year = monthDate.getFullYear();
+  const month = monthDate.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const totalDays = lastDay.getDate();
+  const bookingMap = new Map();
+
+  (state.bookings || []).forEach((booking) => {
+    if (!booking.date) return;
+    const parsedDate = new Date(`${booking.date}T12:00:00`);
+    if (Number.isNaN(parsedDate.getTime())) return;
+    if (parsedDate.getFullYear() !== year || parsedDate.getMonth() !== month) return;
+    const key = String(parsedDate.getDate());
+    bookingMap.set(key, (bookingMap.get(key) || 0) + 1);
+  });
+
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) {
+    cells.push('<div class="mini-day empty" aria-hidden="true"></div>');
+  }
+  for (let day = 1; day <= totalDays; day++) {
+    const dayKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const count = bookingMap.get(String(day)) || 0;
+    const isSelected = selectedDate === dayKey;
+    cells.push(`
+      <button type="button" class="mini-day ${count ? 'has-booking' : ''} ${isSelected ? 'selected' : ''}" data-calendar-day="${dayKey}" aria-label="${dayKey}${count ? ` - ${count} booking${count > 1 ? 's' : ''}` : ' - no bookings'}">
+        <span>${day}</span>${count ? `<small>${count}</small>` : ''}
+      </button>
+    `);
+  }
+  const trailing = (7 - (cells.length % 7)) % 7;
+  for (let i = 0; i < trailing; i++) {
+    cells.push('<div class="mini-day empty" aria-hidden="true"></div>');
+  }
+
+  const monthLabel = monthDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  el.innerHTML = `
+    <div class="mini-calendar-wrap">
+      <div class="mini-calendar-header">${monthLabel}</div>
+      <div class="mini-calendar-grid">
+        ${dayNames.map((day) => `<div class="mini-day-name">${day}</div>`).join('')}
+        ${cells.join('')}
+      </div>
+    </div>
+  `;
+
+  el.querySelectorAll('[data-calendar-day]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const dateKey = button.dataset.calendarDay;
+      document.body.dataset.calendarDate = document.body.dataset.calendarDate === dateKey ? '' : dateKey;
+      initAdminCalendar();
+      renderAdminDashboard(document.body.dataset.calendarDate || '');
+    });
+  });
+}
+
+function initAdminBookings() {
+  renderAdminDashboard();
 }
 
 function initAuthHandlers() {
@@ -811,6 +1529,8 @@ function initFooterYear() {
   });
 }
 document.addEventListener('DOMContentLoaded', () => {
+  applyAdminSiteValues();
+  renderHomepageContent();
   applyTranslations();
   setLang(getLang());
   initNavbar();
@@ -820,7 +1540,20 @@ document.addEventListener('DOMContentLoaded', () => {
   initFloatingWhatsApp();
   initReviewModal();
   initAdminPage();
+  initAdminCalendar();
+  initAdminBookings();
+  initBerlinNotice();
   initFooterYear();
   normalizeWhatsAppLinks();
   if (window.lucide) lucide.createIcons();
 });
+
+function initBerlinNotice() {
+  // site-wide small notice that the service currently covers Berlin only
+  try {
+    const el = document.createElement('div');
+    el.className = 'berlin-notice';
+    el.textContent = 'Service area: Berlin only.';
+    document.body.insertBefore(el, document.body.firstChild);
+  } catch (e) { /* non-fatal */ }
+}
