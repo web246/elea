@@ -2135,6 +2135,87 @@ html, body { max-width: 100vw; overflow-x: hidden; }
     color: #174F43;
   }
 }
+
+/* Mobile-specific hero & navbar refinements (mobile only, do not affect desktop) */
+@media (max-width: 767px) {
+  /* Use the hero image as a background for the full hero area */
+  .hero {
+    background-image: url("assets/images/hero.png");
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    position: relative;
+    /* ensure hero extends below CTAs and fills the viewport minus nav */
+    min-height: 66vh;
+    display: block;
+    isolation: isolate;
+  }
+
+  /* Hide the inline <img> used on desktop so we don't get duplicated visuals */
+  .hero .hero-bg { display: none !important; }
+
+  /* Soft warm cream overlay to keep photography visible but text readable */
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(242,237,230,0.86) 0%, rgba(242,237,230,0.70) 28%, rgba(242,237,230,0.30) 62%, rgba(242,237,230,0.08) 100%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Ensure hero content sits above the overlay */
+  .hero-content { position: relative; z-index: 2; padding-top: 3.25rem; padding-bottom: 2.25rem; }
+  .hero-inner { max-width: 100%; }
+
+  /* Headline / body adjustments for better fit on narrow screens */
+  .hero-headline { font-size: clamp(2.1rem, 7.4vw, 3.2rem); line-height: 1.02; color: #174F43; }
+  .hero-body { color: rgba(23,79,67,0.88); font-size: 0.98rem; }
+
+  /* CTA layout: prefer side-by-side when there is room, otherwise stack; consistent height and touch target */
+  .hero-actions { display: flex; gap: 0.9rem; margin-top: 1.5rem; }
+  .hero-actions .elea-button-primary, .hero-actions .elea-button-outline {
+    flex: 1 1 0;
+    min-height: 56px;
+    border-radius: 12px;
+    font-size: 13px;
+    padding-left: 1rem; padding-right: 1rem;
+    white-space: nowrap;
+  }
+
+  /* On the smallest phones stack vertically to avoid awkward wrapping */
+  @media (max-width: 360px) {
+    .hero-actions { flex-direction: column; }
+    .hero-actions .elea-button-primary, .hero-actions .elea-button-outline { width: 100%; }
+  }
+
+  /* Refine mobile navbar visual language to match Elea premium palette */
+  .navbar {
+    background: #C5A772; /* champagne gold */
+    color: #174F43; /* deep forest green for text/icons */
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(23,79,67,0.08);
+    box-shadow: 0 6px 18px rgba(23,79,67,0.06);
+  }
+  .navbar-inner { min-height: 56px; gap: 0.5rem; }
+  .logo-img, .site-logo { height: 48px !important; width: auto !important; }
+
+  /* Make language toggles compact and balanced */
+  .lang-switch { background: transparent; padding: 0; gap: .35rem; }
+  .lang-switch button { background: transparent; border: none; color: #174F43; padding: .25rem .4rem; font-size: 11px; font-weight:700; }
+  .lang-switch span { color: rgba(23,79,67,0.7); }
+
+  /* Menu icon color and sizing */
+  .mobile-menu-toggle { background: transparent; border: none; color: #174F43; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+
+  /* Make sure mobile menu panel contrasts well with navbar when open */
+  .mobile-menu { background: #ffffff; color: #174F43; }
+  .mobile-menu .logo { color: #174F43; }
+
+  /* Prevent horizontal overflow from hero content */
+  .hero, .hero * { max-width: 100%; box-sizing: border-box; }
+}
 @media (prefers-reduced-motion: reduce) {
   * {
     animation: none !important;
@@ -2196,4 +2277,36 @@ html, body { max-width: 100vw; overflow-x: hidden; }
 #upload-submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* --- Mobile / global fixes to keep fixed/sticky nav from overlapping content --- */
+:root { --navbar-safe-area: 1rem; --navbar-height: 72px; }
+
+/* Ensure page content is not hidden under fixed/sticky nav on small screens */
+@media (max-width: 900px) {
+  /* Provide a safe top padding for the whole page */
+  .page { padding-top: calc(var(--navbar-height) + var(--navbar-safe-area)); }
+
+  /* Make the navbar sit neatly centered and not full-bleed on narrow viewports */
+  .navbar {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(96vw, 560px);
+    border-radius: 0 0 16px 16px;
+    position: fixed; /* ensure it sits above content */
+    top: 12px;
+    z-index: 9999;
+  }
+
+  /* Keep the mobile menu toggle visible and reduce oversized logo on very small screens */
+  .mobile-menu-toggle { display: flex; }
+  .site-logo, .logo-img { height: 64px !important; width: 64px !important; }
+
+  /* Reduce hero min-height so first fold is visible on small phones */
+  .hero { min-height: 56vh; }
+}
+
+/* Make sure sticky nav variants in pages with their own CSS still respect safe padding */
+@media (max-width: 900px) {
+  .content-page, .elea-section, main { padding-top: 0; }
 }
