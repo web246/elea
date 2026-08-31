@@ -334,7 +334,7 @@ textarea.elea-input { resize: vertical; }
 .mobile-menu {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 250;
   background: hsl(var(--background));
   display: flex;
   flex-direction: column;
@@ -354,6 +354,25 @@ textarea.elea-input { resize: vertical; }
   justify-content: space-between;
   padding: 1rem 1.5rem;
   border-bottom: 1px solid hsl(var(--border));
+}
+.mobile-menu-header .booking-close {
+  position: relative;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: rgba(23, 79, 67, 0.06);
+  border: 1px solid rgba(23, 79, 67, 0.18);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #174F43;
+  flex-shrink: 0;
+}
+.mobile-menu-header .booking-close svg {
+  width: 20px;
+  height: 20px;
 }
 .mobile-menu-nav {
   padding: 2rem 1.5rem 1rem;
@@ -1604,7 +1623,7 @@ html, body { max-width: 100vw; overflow-x: hidden; }
 .review-modal {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 300;
   background: rgba(15, 24, 21, 0.42);
   overflow-y: auto;
   display: none;
@@ -1660,12 +1679,28 @@ html, body { max-width: 100vw; overflow-x: hidden; }
   color: #174F43;
 }
 .booking-close {
-  background: transparent;
-  border: none;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  background: rgba(23, 79, 67, 0.06);
+  border: 1px solid rgba(23, 79, 67, 0.14);
+  border-radius: 50%;
   color: #174F43;
   display:flex;
   align-items:center;
   justify-content:center;
+  cursor: pointer;
+  transition: background .2s ease, transform .2s ease, border-color .2s ease;
+}
+.booking-close:hover {
+  background: rgba(23, 79, 67, 0.1);
+  border-color: rgba(23, 79, 67, 0.22);
+  transform: translateY(-1px);
+}
+.booking-close svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.2;
 }
 .booking-body {
   width: min(100%, 960px);
@@ -2295,7 +2330,7 @@ html, body { max-width: 100vw; overflow-x: hidden; }
     border-radius: 0 0 16px 16px;
     position: fixed; /* ensure it sits above content */
     top: 12px;
-    z-index: 9999;
+    z-index: 120;
   }
 
   /* Keep the mobile menu toggle visible and reduce oversized logo on very small screens */

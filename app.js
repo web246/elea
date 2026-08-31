@@ -572,17 +572,23 @@ function initNavbar() {
   const mobileToggle = document.querySelector('[data-mobile-toggle]');
   const mobileMenu = document.querySelector('[data-mobile-menu]');
   const closeBtn = document.querySelector('[data-mobile-close]');
+  const closeMobileMenu = () => {
+    mobileMenu?.classList.remove('is-open');
+    document.body.classList.remove('menu-open');
+  };
+
   if (mobileToggle && mobileMenu) {
     mobileToggle.addEventListener('click', () => {
-      mobileMenu.classList.toggle('is-open');
-      document.body.classList.toggle('menu-open', mobileMenu.classList.contains('is-open'));
+      const isOpen = !mobileMenu.classList.contains('is-open');
+      mobileMenu.classList.toggle('is-open', isOpen);
+      document.body.classList.toggle('menu-open', isOpen);
     });
   }
   if (closeBtn && mobileMenu) {
-    closeBtn.addEventListener('click', () => mobileMenu.classList.remove('is-open'));
+    closeBtn.addEventListener('click', closeMobileMenu);
   }
   mobileMenu?.querySelectorAll('a').forEach((link) => {
-    link.addEventListener('click', () => mobileMenu.classList.remove('is-open'));
+    link.addEventListener('click', closeMobileMenu);
   });
 
   window.addEventListener('scroll', () => {
