@@ -68,72 +68,7 @@
         transform:translate(-50%,-50%);
       }
 
-      /* ---------- Nav ---------- */
-      .navbar{
-        position:sticky;
-        top:0;
-        z-index:40;
-        background:rgba(250,249,246,0.92);
-        backdrop-filter:blur(10px);
-        border-bottom:1px solid rgba(31,59,46,0.12);
-      }
-      .navbar-inner{
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        height:82px;
-      }
-      .logo{display:inline-flex;align-items:center;color:var(--forest);}
-      .site-logo{height:34px;width:auto;display:block;}
-      .desktop-nav{display:flex;gap:38px;}
-      .desktop-nav a{
-        font-size:0.82rem;
-        letter-spacing:0.08em;
-        text-transform:uppercase;
-        color:var(--charcoal);
-        opacity:.72;
-        transition:opacity .2s ease;
-      }
-      .desktop-nav a:hover{opacity:1;}
-      .desktop-nav a[href="services.html"]{opacity:1;color:var(--forest);font-weight:600;}
-      .header-actions{display:flex;align-items:center;gap:20px;}
-      .lang-switch{display:flex;align-items:center;gap:8px;font-size:0.78rem;color:var(--charcoal);}
-      .lang-toggle-btn{background:none;border:none;color:inherit;padding:2px;font-size:inherit;letter-spacing:0.05em;cursor:pointer;opacity:.5;transition:opacity .2s ease,color .2s ease;}
-      .lang-toggle-btn:hover{opacity:.85;}
-      .lang-toggle-btn.active{opacity:1;color:var(--forest);font-weight:700;}
-      .mobile-menu .lang-toggle-btn.active{color:var(--gold);}
-      .navbar-book{
-        background:var(--forest);
-        color:var(--soft-white);
-        border:none;
-        padding:12px 24px;
-        font-size:0.78rem;
-        letter-spacing:0.08em;
-        text-transform:uppercase;
-        border-radius:2px;
-        cursor:pointer;
-        transition:background .2s ease;
-      }
-      .navbar-book:hover{background:var(--charcoal);}
-      .mobile-menu-toggle{display:none;background:none;border:none;color:var(--forest);cursor:pointer;}
-
-      .mobile-menu{
-        position:fixed;inset:0;z-index:50;
-        background:var(--forest);
-        color:var(--soft-white);
-        transform:translateX(100%);
-        transition:transform .35s ease;
-        display:flex;flex-direction:column;
-        padding:28px 28px 40px;
-      }
-      .mobile-menu.is-open{transform:translateX(0);}
-      .mobile-menu-header{display:flex;justify-content:space-between;align-items:center;}
-      .booking-close{background:none;border:none;color:var(--soft-white);cursor:pointer;}
-      .mobile-menu-nav{display:flex;flex-direction:column;gap:22px;margin-top:56px;}
-      .mobile-menu-nav a{font-family:var(--font-heading);font-size:1.6rem;font-weight:500;}
-      .mobile-menu-footer{margin-top:auto;display:flex;flex-direction:column;gap:18px;}
-      .mobile-menu-footer .elea-button-primary{width:100%;}
-      .mobile-lang-row{display:flex;gap:10px;align-items:center;font-size:0.8rem;opacity:.75;}
+      /* Nav styles consolidated into style.css for consistency across pages */
 
       .elea-button-primary{
         background:var(--gold);
