@@ -227,7 +227,16 @@ const translations = {
       dateQuestion: 'When would you like us to visit?',
       timeQuestion: 'What time works best?',
       detailsQuestion: 'Your contact details',
-      fullName: 'Full name', phone: 'Phone', email: 'Email', postcode: 'Postcode', address: 'Address', notes: 'Additional notes',
+      fullName: 'Full name', phone: 'Phone', email: 'Email', country: 'Country', postcode: 'ZIP code', street: 'Street', location: 'Location', address: 'Address', notes: 'Additional notes',
+      countryOptions: [
+        { value: 'DE', label: '🇩🇪 Germany (+49)' },
+        { value: 'US', label: '🇺🇸 United States (+1)' },
+        { value: 'GB', label: '🇬🇧 United Kingdom (+44)' },
+        { value: 'KE', label: '🇰🇪 Kenya (+254)' }
+      ],
+      postcodeOptions: ['10115', '10117', '10119', '10178', '10243', '10435', '10437', '10439', '10551', '10557', '10629', '10777', '10779', '10961', '10963', '12043', '12045', '12047', '12099', '12157', '12163', '12203', '12247', '12347', '12435', '12459', '12487', '13347', '13349', '13581', '13585', '13589', '14193', '14199', '14305', '14309'],
+      streetOptions: ['Friedrichstraße', 'Schönhauser Allee', 'Bergmannstraße', 'Kottbusser Damm', 'Müllerstraße', 'Torstraße', 'Potsdamer Straße', 'Oranienburger Straße', 'Hauptstraße', 'Kaiserstraße', 'Prenzlauer Allee', 'Frankfurter Allee', 'Other'],
+      locationOptions: ['Berlin Mitte', 'Berlin Neukölln', 'Berlin Prenzlauer Berg', 'Berlin Friedrichshain', 'Berlin Charlottenburg', 'Berlin Kreuzberg', 'Berlin Tempelhof', 'Berlin Schöneberg', 'Berlin Pankow', 'Berlin Other'],
       reviewQuestion: 'Review your request',
       successTitle: 'Request Received', successBody: 'Your booking request has been received. Elea will contact you via WhatsApp or email to confirm availability and final details.', referenceLabel: 'Your booking reference', whatsappBtn: 'Send via WhatsApp', emailBtn: 'Send via Email', closeBtn: 'Close',
       required: 'This field is required', selectService: 'Please select at least one service', selectRooms: 'Please select the number of rooms', selectDate: 'Please select a date', selectTime: 'Please select a time',
@@ -328,7 +337,16 @@ const translations = {
       dateQuestion: 'Wann sollen wir kommen?',
       timeQuestion: 'Welche Zeit passt am besten?',
       detailsQuestion: 'Ihre Kontaktdaten',
-      fullName: 'Vollständiger Name', phone: 'Telefon', email: 'E-Mail', postcode: 'Postleitzahl', address: 'Adresse', notes: 'Zusätzliche Notizen',
+      fullName: 'Vollständiger Name', phone: 'Telefon', email: 'E-Mail', country: 'Land', postcode: 'ZIP-Code', street: 'Straße', location: 'Standort', address: 'Adresse', notes: 'Zusätzliche Notizen',
+      countryOptions: [
+        { value: 'DE', label: '🇩🇪 Deutschland (+49)' },
+        { value: 'US', label: '🇺🇸 Vereinigte Staaten (+1)' },
+        { value: 'GB', label: '🇬🇧 Vereinigtes Königreich (+44)' },
+        { value: 'KE', label: '🇰🇪 Kenia (+254)' }
+      ],
+      postcodeOptions: ['10115', '10117', '10119', '10178', '10243', '10435', '10437', '10439', '10551', '10557', '10629', '10777', '10779', '10961', '10963', '12043', '12045', '12047', '12099', '12157', '12163', '12203', '12247', '12347', '12435', '12459', '12487', '13347', '13349', '13581', '13585', '13589', '14193', '14199', '14305', '14309'],
+      streetOptions: ['Friedrichstraße', 'Schönhauser Allee', 'Bergmannstraße', 'Kottbusser Damm', 'Müllerstraße', 'Torstraße', 'Potsdamer Straße', 'Oranienburger Straße', 'Hauptstraße', 'Kaiserstraße', 'Prenzlauer Allee', 'Frankfurter Allee', 'Andere'],
+      locationOptions: ['Berlin Mitte', 'Berlin Neukölln', 'Berlin Prenzlauer Berg', 'Berlin Friedrichshain', 'Berlin Charlottenburg', 'Berlin Kreuzberg', 'Berlin Tempelhof', 'Berlin Schöneberg', 'Berlin Pankow', 'Berlin Andere'],
       reviewQuestion: 'Überprüfen Sie Ihre Anfrage',
       successTitle: 'Anfrage eingegangen', successBody: 'Ihre Buchungsanfrage ist eingegangen. Elea wird Sie per WhatsApp oder E-Mail kontaktieren, um Verfügbarkeit und Details zu bestätigen.', referenceLabel: 'Ihre Buchungsreferenz', whatsappBtn: 'Per WhatsApp senden', emailBtn: 'Per E-Mail senden', closeBtn: 'Schließen',
       required: 'Dieses Feld ist erforderlich', selectService: 'Bitte wählen Sie mindestens eine Leistung', selectRooms: 'Bitte wählen Sie die Anzahl der Räume', selectDate: 'Bitte wählen Sie ein Datum', selectTime: 'Bitte wählen Sie eine Zeit',
@@ -390,6 +408,21 @@ const serviceData = [
   { key: 'Home Organization', titleKey: 'services.s8.title', title: 'Home Organization', desc: 'Wardrobes, sitting rooms and storage reimagined — systems that bring lasting order and calm to your space.' }
 ];
 
+const countryOptions = [
+  { code: 'DE', flag: '🇩🇪', name: 'Germany', dialCode: '+49', zipCodes: ['10115', '10117', '10119', '10178', '10243', '10435', '10437', '10439', '10551', '10557', '10629', '10777', '10779', '10961', '10963', '12043', '12045', '12047', '12099', '12157', '12163', '12203', '12247', '12347', '12435', '12459', '12487', '13347', '13349', '13581', '13585', '13589', '14193', '14199', '14305', '14309'] },
+  { code: 'US', flag: '🇺🇸', name: 'United States', dialCode: '+1', zipCodes: ['10001', '10002', '10003', '10009', '10016', '10022', '10036', '11201', '30303', '94105', '60601', '90210'] },
+  { code: 'GB', flag: '🇬🇧', name: 'United Kingdom', dialCode: '+44', zipCodes: ['SW1A 1AA', 'EC1A 1BB', 'M1 1AE', 'B1 1AA', 'W1A 1AA', 'EH1 1AA', 'LS1 1AA'] },
+  { code: 'KE', flag: '🇰🇪', name: 'Kenya', dialCode: '+254', zipCodes: ['00100', '00200', '00500', '01000', '02000', '10000', '40000'] }
+];
+
+function getCountryByCode(code) {
+  return countryOptions.find((country) => country.code === code) || countryOptions[0];
+}
+
+function getZipCodeOptions(code) {
+  return getCountryByCode(code).zipCodes;
+}
+
 const pageLanguageMap = {
   home: 'en', about: 'en', services: 'en', contact: 'en', impressum: 'de', datenschutz: 'de', terms: 'en', cancellation: 'en', login: 'en', register: 'en', forgot: 'en', reset: 'en', admin: 'en'
 };
@@ -406,6 +439,38 @@ function setLang(lang) {
     btn.classList.toggle('active', isActive);
   });
   applyTranslations();
+  // If there's a page-specific title translation, update document.title
+  try {
+    const pageId = getPageId();
+    const titleKey = `${pageId}.title`;
+    const headlineKey = `${pageId}.headline`;
+    if (hasTranslation(titleKey, lang)) {
+      document.title = t(titleKey);
+    } else if (hasTranslation(headlineKey, lang)) {
+      document.title = t(headlineKey);
+    }
+  } catch (e) { /* non-fatal */ }
+}
+
+function getPageId() {
+  // derive a short page id from the filename (e.g. cancellation.html -> cancellation)
+  try {
+    const path = window.location.pathname || '';
+    const parts = path.split('/').filter(Boolean);
+    const file = parts.length ? parts[parts.length - 1] : 'index.html';
+    return file.replace(/\.html?$/i, '') || 'index';
+  } catch (e) { return 'index'; }
+}
+
+function hasTranslation(key, lang) {
+  lang = lang || getLang();
+  const parts = key.split('.');
+  let node = translations[lang];
+  for (const p of parts) {
+    if (!node || typeof node !== 'object' || !(p in node)) return false;
+    node = node[p];
+  }
+  return typeof node === 'string' || typeof node === 'number';
 }
 
 function t(key) {
@@ -429,6 +494,36 @@ function applyTranslations() {
   document.querySelectorAll('[data-i18n-href]').forEach((el) => {
     const key = el.dataset.i18nHref;
     el.href = t(key);
+  });
+  // HTML content (allowing simple markup in translations)
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+    const key = el.dataset.i18nHtml;
+    el.innerHTML = t(key);
+  });
+  // title attribute
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    const key = el.dataset.i18nTitle;
+    el.title = t(key);
+  });
+  // alt attribute for images
+  document.querySelectorAll('[data-i18n-alt]').forEach((el) => {
+    const key = el.dataset.i18nAlt;
+    el.alt = t(key);
+  });
+  // aria-label attribute
+  document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+    const key = el.dataset.i18nAria;
+    el.setAttribute('aria-label', t(key));
+  });
+  // value (inputs/buttons)
+  document.querySelectorAll('[data-i18n-value]').forEach((el) => {
+    const key = el.dataset.i18nValue;
+    el.value = t(key);
+  });
+  // src (images / media)
+  document.querySelectorAll('[data-i18n-src]').forEach((el) => {
+    const key = el.dataset.i18nSrc;
+    el.src = t(key);
   });
   document.querySelectorAll('[data-lang-toggle]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.langToggle === getLang());
@@ -630,7 +725,7 @@ function openBookingModal(serviceName = '') {
     cleaningType: '',
     date: '',
     time: '',
-    details: { fullName: '', phone: '', email: '', postcode: '', address: '', notes: '' },
+    details: { fullName: '', phone: '', email: '', street: '', location: '', address: '', notes: '' },
     errors: {},
     success: false,
     reference: ''
@@ -778,15 +873,23 @@ function renderBookingModal() {
   }
 
   if (state.step === 5) {
-    const fields = ['fullName', 'phone', 'email', 'postcode', 'address', 'notes'];
+    const fields = ['fullName', 'street', 'phone', 'email', 'location', 'address', 'notes'];
     fields.forEach((key) => {
       const element = modal.querySelector(`#booking-${key}`);
-      if (element) {
+      if (!element) return;
+
+      if (['street', 'location'].includes(key)) {
         element.value = state.details[key] || '';
-        element.addEventListener('input', (e) => {
+        element.addEventListener('change', (e) => {
           state.details[key] = e.target.value;
         });
+        return;
       }
+
+      element.value = state.details[key] || '';
+      element.addEventListener('input', (e) => {
+        state.details[key] = e.target.value;
+      });
     });
   }
 }
@@ -810,7 +913,7 @@ function validateStep(state) {
     return false;
   }
   if (state.step === 5) {
-    const required = ['fullName', 'phone', 'email', 'postcode', 'address'];
+    const required = ['fullName', 'street', 'phone', 'email', 'location', 'address'];
     required.forEach((field) => {
       if (!state.details[field] || !state.details[field].trim()) {
         state.errors[field] = t('booking.required');
@@ -908,16 +1011,26 @@ function renderBookingStep(state) {
           <input id="booking-fullName" class="elea-input" value="${state.details.fullName || ''}" />
         </div>
         <div class="booking-detail-field">
-          <label>${t('booking.phone')}</label>
-          <input id="booking-phone" class="elea-input" value="${state.details.phone || ''}" />
-        </div>
-        <div class="booking-detail-field">
           <label>${t('booking.email')}</label>
           <input id="booking-email" class="elea-input" type="email" value="${state.details.email || ''}" />
         </div>
         <div class="booking-detail-field">
-          <label>${t('booking.postcode')}</label>
-          <input id="booking-postcode" class="elea-input" value="${state.details.postcode || ''}" />
+          <label>${t('booking.phone')}</label>
+          <input id="booking-phone" class="elea-input" value="${state.details.phone || ''}" />
+        </div>
+        <div class="booking-detail-field">
+          <label>${t('booking.street')}</label>
+          <select id="booking-street" class="elea-input booking-location-select">
+            <option value="">${t('booking.street')}</option>
+            ${t('booking.streetOptions').map((option) => `<option value="${option}" ${state.details.street === option ? 'selected' : ''}>${option}</option>`).join('')}
+          </select>
+        </div>
+        <div class="booking-detail-field">
+          <label>${t('booking.location')}</label>
+          <select id="booking-location" class="elea-input booking-location-select">
+            <option value="">${t('booking.location')}</option>
+            ${t('booking.locationOptions').map((option) => `<option value="${option}" ${state.details.location === option ? 'selected' : ''}>${option}</option>`).join('')}
+          </select>
         </div>
         <div class="booking-detail-field full">
           <label>${t('booking.address')}</label>
@@ -943,7 +1056,8 @@ function renderBookingStep(state) {
     { label: t('booking.fullName'), value: state.details.fullName },
     { label: t('booking.phone'), value: state.details.phone },
     { label: t('booking.email'), value: state.details.email },
-    { label: t('booking.postcode'), value: state.details.postcode },
+    { label: t('booking.street'), value: state.details.street },
+    { label: t('booking.location'), value: state.details.location },
     { label: t('booking.address'), value: state.details.address },
     { label: t('booking.notes'), value: state.details.notes }
   ];
@@ -1037,11 +1151,11 @@ function generateReference() {
 }
 
 function buildWhatsAppMessage(state) {
-  return `Hello Elea, I would like to confirm my booking request.\nReference: ${state.reference}\nName: ${state.details.fullName}\nServices: ${state.selectedServices.join(', ')}\nRooms: ${state.rooms}\nCleaning Type: ${state.cleaningType}\nDate: ${state.date}\nTime: ${state.time}\nAddress: ${state.details.address}\nPostcode: ${state.details.postcode}\nPhone: ${state.details.phone}\nEmail: ${state.details.email}\nNotes: ${state.details.notes || 'None'}`;
+  return `Hello Elea, I would like to confirm my booking request.\nReference: ${state.reference}\nName: ${state.details.fullName}\nServices: ${state.selectedServices.join(', ')}\nRooms: ${state.rooms}\nCleaning Type: ${state.cleaningType}\nDate: ${state.date}\nTime: ${state.time}\nStreet: ${state.details.street || 'Not specified'}\nLocation: ${state.details.location || 'Not specified'}\nAddress: ${state.details.address}\nPhone: ${state.details.phone}\nEmail: ${state.details.email}\nNotes: ${state.details.notes || 'None'}`;
 }
 
 function buildEmailBody(state) {
-  return `Booking reference: ${state.reference}\nName: ${state.details.fullName}\nServices: ${state.selectedServices.join(', ')}\nRooms: ${state.rooms}\nCleaning Type: ${state.cleaningType}\nDate: ${state.date}\nTime: ${state.time}\nAddress: ${state.details.address}\nPostcode: ${state.details.postcode}\nPhone: ${state.details.phone}\nEmail: ${state.details.email}\nNotes: ${state.details.notes || 'None'}`;
+  return `Booking reference: ${state.reference}\nName: ${state.details.fullName}\nServices: ${state.selectedServices.join(', ')}\nRooms: ${state.rooms}\nCleaning Type: ${state.cleaningType}\nDate: ${state.date}\nTime: ${state.time}\nStreet: ${state.details.street || 'Not specified'}\nLocation: ${state.details.location || 'Not specified'}\nAddress: ${state.details.address}\nPhone: ${state.details.phone}\nEmail: ${state.details.email}\nNotes: ${state.details.notes || 'None'}`;
 }
 
 function initFloatingWhatsApp() {
