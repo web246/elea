@@ -86,7 +86,7 @@ main { flex: 1; }
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.2em;
-  color: hsl(var(--foreground));
+  color: #d9c08a;
   font-weight: 600;
 }
 .elea-heading {
@@ -333,26 +333,33 @@ textarea.elea-input { resize: vertical; }
 }
 .mobile-menu {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  width: min(86vw, 360px);
+  height: 100vh;
   z-index: 250;
   background: hsl(var(--background));
   display: flex;
   flex-direction: column;
+  border-left: 1px solid hsl(var(--border));
+  box-shadow: -18px 0 40px rgba(0, 0, 0, 0.14);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transition: opacity .3s ease, visibility .3s ease;
+  transform: translateX(110%);
+  transition: transform .28s ease, opacity .28s ease, visibility .28s ease;
 }
 .mobile-menu.is-open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+  transform: translateX(0);
 }
 .mobile-menu-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid hsl(var(--border));
 }
 .mobile-menu-header .booking-close {
@@ -375,26 +382,31 @@ textarea.elea-input { resize: vertical; }
   height: 20px;
 }
 .mobile-menu-nav {
-  padding: 2rem 1.5rem 1rem;
+  padding: 1.5rem 1.25rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1.4rem;
-  align-items: center;
+  gap: 0.75rem;
+  align-items: flex-start;
   justify-content: center;
   flex: 1;
 }
 .mobile-menu-nav a {
-  font-family: var(--font-heading);
-  font-size: 2.5rem;
-  font-weight: 300;
-  letter-spacing: -0.03em;
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  line-height: 1.25;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
   color: hsl(var(--foreground));
+  padding: 0.55rem 0;
+  border-bottom: 1px solid rgba(21, 60, 50, 0.08);
   opacity: 0;
-  transform: translateY(18px);
-  animation: fade-up 0.4s ease-out forwards;
+  transform: translateY(12px);
+  animation: fade-up 0.35s ease-out forwards;
 }
 .mobile-menu-footer {
-  padding: 1rem 1.5rem 2rem;
+  padding: 1rem 1.25rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -403,7 +415,7 @@ textarea.elea-input { resize: vertical; }
   display: flex;
   justify-content: center;
   gap: 1rem;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.15em;
   text-transform: uppercase;
@@ -648,7 +660,7 @@ textarea.elea-input { resize: vertical; }
   text-transform: uppercase;
   letter-spacing: 0.22em;
   font-weight: 600;
-  color: #174F43;
+  color: #d9c08a;
 }
 .hero-headline {
   margin-top: 1.25rem;
