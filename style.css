@@ -786,6 +786,10 @@ textarea.elea-input { resize: vertical; }
   grid-template-columns: 1fr;
   gap: 1rem;
 }
+.before-after-slider-wrap {
+  width: min(100%, 1080px);
+  margin: 0 auto;
+}
 .beforeafter-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -809,25 +813,70 @@ textarea.elea-input { resize: vertical; }
   color: hsl(var(--background));
   border-color: hsl(var(--accent));
 }
-.before-after-box {
+.ba {
   position: relative;
   overflow: hidden;
+  cursor: ew-resize;
+  user-select: none;
+  touch-action: none;
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
   border: 1px solid hsl(var(--background) / 0.2);
-  aspect-ratio: 16 / 10;
+  background: rgba(255,255,255,0.04);
 }
-.before-after-box img {
+.ba img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  pointer-events: none;
 }
-.before-after-box .before-overlay {
+.ba .ba-clip {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.28);
+  overflow: hidden;
+  width: 50%;
 }
-.before-after-box.before img { filter: brightness(0.65) contrast(0.85) saturate(0.4); }
+.ba .ba-clip img {
+  width: 100%;
+  height: 100%;
+}
+.ba .ba-divider {
+  position: absolute;
+  inset: 0 auto 0 50%;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.ba .ba-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a1a1a;
+  font-size: 1.05rem;
+  font-weight: 700;
+  pointer-events: none;
+}
+.ba-hint {
+  margin-top: 0.7rem;
+  text-align: center;
+  color: rgba(255,255,255,0.75);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
 .before-after-note {
   margin-top: 1.25rem;
   color: hsl(var(--background) / 0.5);

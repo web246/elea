@@ -633,26 +633,102 @@ function initServiceButtons() {
 }
 
 function initBeforeAfterTabs() {
-  const tabs = document.querySelectorAll('[data-tab]');
+  const tabs = document.querySelectorAll('.beforeafter-tabs [data-tab]');
+  const slider = document.getElementById('before-after-slider');
+  if (!slider || tabs.length === 0) return;
+
+  const imageMap = {
+    Kitchen: {
+      before: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/eea53f040_generated_d32cb4ec.jpg',
+      after: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/6c5d6b9de_generated_66a8a124.jpg'
+    },
+    Bathroom: {
+      before: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/e081e23ee_generated_image.png',
+      after: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/806b7ea43_generated_image.png'
+    },
+    'Living Room': {
+      before: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/26a133be3_generated_image.png',
+      after: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/61407eaa2_generated_image.png'
+    },
+    Bedroom: {
+      before: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/435a86c2f_generated_image.png',
+      after: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/23ae30241_generated_image.png'
+    },
+    Wardrobe: {
+      before: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/73d5174a0_generated_ee12bf6d.jpg',
+      after: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/9d516d54e_generated_18a80c42.jpg'
+    },
+    Oven: {
+      before: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/62275e630_generated_image.png',
+      after: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/867e61c6a_generated_image.png'
+    },
+    Window: {
+      before: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/1fbcda3ed_generated_image.png',
+      after: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/125954a1f_generated_image.png'
+    },
+    Laundry: {
+      before: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/ac01f1da9_generated_image.png',
+      after: 'https://media.base44.com/images/public/6a96e4b5e782646362417be7/9b0310c4f_generated_image.png'
+    }
+  };
+
+  const beforeImage = slider.querySelector('.ba-before');
+  const afterImage = slider.querySelector('.ba-after');
+  const clip = slider.querySelector('.ba-clip');
+  const divider = slider.querySelector('.ba-divider');
+  const handle = slider.querySelector('.ba-handle');
+
+  function setSliderPosition(x) {
+    const rect = slider.getBoundingClientRect();
+    const percent = Math.min(100, Math.max(0, ((x - rect.left) / rect.width) * 100));
+    clip.style.width = percent + '%';
+    divider.style.left = percent + '%';
+    if (handle) handle.style.left = percent + '%';
+  }
+
+  function applyTab(key) {
+    const images = imageMap[key] || imageMap.Kitchen;
+    beforeImage.src = images.before;
+    beforeImage.alt = key + ' before';
+    afterImage.src = images.after;
+    afterImage.alt = key + ' after';
+    clip.style.width = '50%';
+    divider.style.left = '50%';
+    if (handle) handle.style.left = '50%';
+  }
+
+  let dragging = false;
+
+  slider.addEventListener('pointerdown', (event) => {
+    dragging = true;
+    slider.setPointerCapture(event.pointerId);
+    setSliderPosition(event.clientX);
+  });
+
+  slider.addEventListener('pointermove', (event) => {
+    if (dragging) setSliderPosition(event.clientX);
+  });
+
+  slider.addEventListener('pointerup', () => {
+    dragging = false;
+  });
+
+  slider.addEventListener('pointerleave', () => {
+    dragging = false;
+  });
+
+  slider.addEventListener('click', (event) => {
+    if (!dragging) setSliderPosition(event.clientX);
+  });
+
   tabs.forEach((tab) => {
     tab.addEventListener('click', () => {
-      tabs.forEach((t) => t.classList.toggle('active', t === tab));
-      const before = document.querySelectorAll('.before-after-box.before img')[0];
-      const after = document.querySelectorAll('.before-after-box.after img')[0];
-      const map = {
-        Kitchen: 'assets/images/kitchen.png',
-        Bathroom: 'assets/images/bathroom.png',
-        'Living Room': 'assets/images/living.png',
-        Bedroom: 'assets/images/bedroom.png',
-        Wardrobe: 'assets/images/wardrobe.png',
-        'Renovation Cleanup': 'assets/images/afterReno.png'
-      };
-      const activeKey = tab.dataset.tab;
-      const image = map[activeKey] || map.Kitchen;
-      if (before) before.src = image;
-      if (after) after.src = image;
+      tabs.forEach((item) => item.classList.toggle('active', item === tab));
+      applyTab(tab.dataset.tab);
     });
   });
+
+  applyTab('Kitchen');
 }
 
 function initReviewModal() {

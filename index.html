@@ -276,26 +276,27 @@
               <h2 class="elea-heading text-background mt-4" data-i18n="beforeAfter.heading">Before &amp; After</h2>
             </div>
             <div class="beforeafter-tabs">
-              <button type="button" class="active" data-tab="Kitchen" data-i18n="beforeAfter.tab1">Kitchen</button>
-              <button type="button" data-tab="Bathroom" data-i18n="beforeAfter.tab2">Bathroom</button>
-              <button type="button" data-tab="Living Room" data-i18n="beforeAfter.tab3">Living Room</button>
-              <button type="button" data-tab="Bedroom" data-i18n="beforeAfter.tab4">Bedroom</button>
-              <button type="button" data-tab="Wardrobe" data-i18n="beforeAfter.tab5">Wardrobe</button>
-              <button type="button" data-tab="Renovation Cleanup" data-i18n="beforeAfter.tab6">Renovation Cleanup</button>
+              <button type="button" class="active" data-tab="Kitchen">Kitchen</button>
+              <button type="button" data-tab="Bathroom">Bathroom</button>
+              <button type="button" data-tab="Living Room">Living room</button>
+              <button type="button" data-tab="Bedroom">Bedroom</button>
+              <button type="button" data-tab="Wardrobe">Wardrobe</button>
+              <button type="button" data-tab="Oven">Oven</button>
+              <button type="button" data-tab="Window">Window</button>
+              <button type="button" data-tab="Laundry">Laundry</button>
             </div>
             <div class="before-after-grid">
-              <div>
-                <div class="elea-eyebrow" style="color:hsl(var(--background) / 0.6);" data-i18n="beforeAfter.before">Before</div>
-                <div class="before-after-box before mt-3">
-                  <img src="assets/images/kitchen.png" alt="Before transformation" />
-                  <div class="before-overlay"></div>
+              <div class="before-after-slider-wrap">
+                <div class="ba" id="before-after-slider" aria-label="Before and after image comparison">
+                  <img class="ba-after" src="https://media.base44.com/images/public/6a96e4b5e782646362417be7/6c5d6b9de_generated_66a8a124.jpg" alt="After kitchen" />
+                  <div class="ba-clip">
+                    <img class="ba-before" src="https://media.base44.com/images/public/6a96e4b5e782646362417be7/eea53f040_generated_d32cb4ec.jpg" alt="Before kitchen" />
+                  </div>
+                  <div class="ba-divider" aria-hidden="true">
+                    <div class="ba-handle" aria-hidden="true">⇄</div>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <div class="elea-eyebrow" style="color:hsl(var(--background) / 0.6);" data-i18n="beforeAfter.after">After</div>
-                <div class="before-after-box after mt-3">
-                  <img src="assets/images/kitchen.png" alt="After transformation" />
-                </div>
+                <div class="ba-hint">Drag to compare</div>
               </div>
             </div>
             <p class="before-after-note" data-i18n="beforeAfter.note">Before & After — authentic project photography showcasing Elea's work across Berlin.</p>
