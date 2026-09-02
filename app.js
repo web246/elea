@@ -8,10 +8,225 @@ const defaults = {
   whatsappNumber: '4915216019843',
   notificationEmail: 'websitesbrian585@gmail.com'
 };
-// Set this to your Google Apps Script Web App URL after deploying (see README_APPSCRIPT.md)
-defaults.bookingEndpoint = '';
+// Set this to the backend booking endpoint. Using localhost:4001 by default.
+defaults.bookingEndpoint = 'http://localhost:4001/api/bookings';
 
 const ADMIN_STORAGE_KEY = 'elea-admin-state';
+const ELEA_SUPABASE_URL = 'https://ttwokdovnpdvflicmyml.supabase.co';
+const ELEA_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0d29rZG92bnBkdmZsaWNteW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzNDM3MzEsImV4cCI6MjEwMzkxOTczMX0.sHe4AiCSEU2O7y6bYeCPemPramNVJhNB9om2AXBYmME';
+
+function getSupabaseClient() {
+  const globalClient = window.supabase?.createClient;
+  if (!globalClient) {
+    return null;
+  }
+  function openBookingDetailsModal(booking) {
+    const modal = document.getElementById('booking-modal');
+    if (!modal) return;
+    const imgs = (booking.booking_images || []).map(i => i.url || i.storage_path).filter(Boolean);
+    const imagesHtml = imgs.length ? `<div class="booking-details-images">${imgs.map(u => `<a href="${u}" target="_blank" rel="noreferrer"><img src="${u}" alt="booking image" loading="lazy"/></a>`).join('')}</div>` : '<div class="admin-note">No images attached.</div>';
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    modal.innerHTML = `
+      <div class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">Booking ${escapeHtml(booking.reference_code || booking.id || '')}</div><button class="booking-close" data-booking-close aria-label="Close"><i data-lucide="x"></i></button></div></div>
+      <div class="elea-container booking-body">
+        <div class="booking-detail-row"><strong>Customer:</strong> ${escapeHtml(booking.customer_name || booking.name || '')}</div>
+        <div class="booking-detail-row"><strong>Email:</strong> ${escapeHtml(booking.customer_email || '')}</div>
+        <div class="booking-detail-row"><strong>Phone:</strong> ${escapeHtml(booking.customer_phone || '')}</div>
+        <div class="booking-detail-row"><strong>Services:</strong> ${escapeHtml(Array.isArray(booking.service_types) ? booking.service_types.join(', ') : (booking.service_types || booking.service || ''))}</div>
+        <div class="booking-detail-row"><strong>Date / Time:</strong> ${escapeHtml(booking.preferred_date || booking.date || '')} ${escapeHtml(booking.preferred_time || booking.time || '')}</div>
+        <div class="booking-detail-row"><strong>Notes:</strong> ${escapeHtml(booking.notes || '')}</div>
+        <h3>Attached Images</h3>
+        ${imagesHtml}
+      </div>
+    `;
+    if (window.lucide) lucide.createIcons();
+    modal.querySelector('[data-booking-close]')?.addEventListener('click', () => {
+      modal.classList.remove('open');
+      document.body.style.overflow = '';
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.remove('open');
+        document.body.style.overflow = '';
+      }
+    });
+  }
+  return globalClient(ELEA_SUPABASE_URL, ELEA_SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  });
+}
+
+function setAdminAuthVisibility(isAuthenticated, email = '') {
+  const authScreen = document.getElementById('admin-auth-screen');
+  const appShell = document.getElementById('admin-app-shell');
+  const userEmail = document.getElementById('admin-current-user-email');
+  const loginField = document.getElementById('admin-login-email-field');
+
+  if (userEmail) {
+    userEmail.textContent = email || 'Admin';
+  }
+
+  if (loginField) {
+    loginField.value = email || '';
+  }
+
+  if (authScreen) authScreen.style.display = isAuthenticated ? 'none' : 'flex';
+  if (appShell) appShell.style.display = isAuthenticated ? 'block' : 'none';
+}
+
+async function refreshAdminAuthState() {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    setAdminAuthVisibility(false, '');
+    return false;
+  }
+
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error) {
+    console.warn('Admin auth session error:', error.message);
+    setAdminAuthVisibility(false, '');
+    return false;
+  }
+
+  const email = session?.user?.email || '';
+  const isAuthenticated = Boolean(session && session.user);
+  setAdminAuthVisibility(isAuthenticated, email);
+  return isAuthenticated;
+}
+
+async function handleAdminLogin(event) {
+  event.preventDefault();
+  const supabase = getSupabaseClient();
+  const emailField = document.getElementById('admin-login-email');
+  const passwordField = document.getElementById('admin-login-password');
+  const messageNode = document.getElementById('admin-auth-message');
+
+  if (!supabase || !emailField || !passwordField) {
+    if (messageNode) {
+      messageNode.textContent = 'Supabase client is unavailable.';
+      messageNode.style.color = '#c03f3f';
+    }
+    return;
+  }
+
+  const email = emailField.value.trim();
+  const password = passwordField.value;
+
+  if (!email || !password) {
+    if (messageNode) {
+      messageNode.textContent = 'Email and password are required.';
+      messageNode.style.color = '#c03f3f';
+    }
+    return;
+  }
+
+  if (messageNode) {
+    messageNode.textContent = 'Signing in...';
+    messageNode.style.color = '#5f7f70';
+  }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
+    if (messageNode) {
+      messageNode.textContent = error.message || 'Login failed.';
+      messageNode.style.color = '#c03f3f';
+    }
+    return;
+  }
+
+  const userEmail = data?.user?.email || email;
+  setAdminAuthVisibility(true, userEmail);
+  if (messageNode) {
+    messageNode.textContent = 'Signed in successfully.';
+    messageNode.style.color = '#5f7f70';
+  }
+  if (document.getElementById('admin-settings-form')) {
+    const emailFieldInSettings = document.getElementById('admin-login-email-field');
+    if (emailFieldInSettings) emailFieldInSettings.value = userEmail;
+  }
+}
+
+async function handleAdminLogout() {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.warn('Admin logout failed:', error.message);
+    }
+  }
+  setAdminAuthVisibility(false, '');
+}
+
+async function updateAdminCredentialsFromSettings(event) {
+  event.preventDefault();
+  const supabase = getSupabaseClient();
+  const settingsForm = document.getElementById('admin-settings-form');
+  const messageNode = document.getElementById('admin-settings-message');
+
+  if (!supabase || !settingsForm) {
+    return;
+  }
+
+  const newEmail = settingsForm.elements.adminLoginEmail?.value?.trim() || '';
+  const password = settingsForm.elements.adminPassword?.value || '';
+  const passwordConfirm = settingsForm.elements.adminPasswordConfirm?.value || '';
+
+  if (password && password !== passwordConfirm) {
+    if (messageNode) {
+      messageNode.textContent = 'Passwords do not match.';
+      messageNode.style.color = '#c03f3f';
+    }
+    return;
+  }
+
+  try {
+    if (messageNode) {
+      messageNode.textContent = 'Saving admin changes...';
+      messageNode.style.color = '#5f7f70';
+    }
+
+    const updates = [];
+    const currentUser = (await supabase.auth.getUser()).data?.user;
+    if (newEmail && currentUser && newEmail.toLowerCase() !== currentUser.email.toLowerCase()) {
+      updates.push(supabase.auth.updateUser({ email: newEmail }));
+    }
+    if (password) {
+      updates.push(supabase.auth.updateUser({ password }));
+    }
+
+    if (updates.length > 0) {
+      const results = await Promise.all(updates);
+      const problem = results.find((result) => result?.error);
+      if (problem?.error) {
+        throw problem.error;
+      }
+    }
+
+    if (messageNode) {
+      messageNode.textContent = 'Admin credentials updated successfully.';
+      messageNode.style.color = '#5f7f70';
+    }
+
+    settingsForm.elements.adminPassword.value = '';
+    settingsForm.elements.adminPasswordConfirm.value = '';
+    const latestUserEmail = (await supabase.auth.getUser()).data?.user?.email || newEmail;
+    setAdminAuthVisibility(true, latestUserEmail);
+    const loginField = document.getElementById('admin-login-email-field');
+    if (loginField) loginField.value = latestUserEmail;
+    const currentUserBadge = document.getElementById('admin-current-user-email');
+    if (currentUserBadge) currentUserBadge.textContent = latestUserEmail;
+  } catch (error) {
+    if (messageNode) {
+      messageNode.textContent = error.message || 'Unable to update admin credentials.';
+      messageNode.style.color = '#c03f3f';
+    }
+  }
+}
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
@@ -1219,31 +1434,62 @@ function submitBookingModal() {
   };
 
   const endpoint = defaults.bookingEndpoint;
-  if (endpoint && endpoint.trim()) {
-    // optimistic UI: show loading state inside modal
-    state.loading = true;
-    renderBookingModal();
-    fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    }).then((res) => res.json()).then((data) => {
-      state.loading = false;
-      if (data && data.success) {
-        // server may return canonical reference
-        state.reference = data.reference || state.reference;
-        state.success = true;
-      } else {
-        state.errors.general = data && data.error ? data.error : 'Failed to submit booking. Please try again.';
+    if (endpoint && endpoint.trim()) {
+      // optimistic UI: show loading state inside modal
+      state.loading = true;
+      renderBookingModal();
+      try {
+        const formData = new FormData();
+        formData.append('reference', state.reference || '');
+        // selected services as repeated fields
+        (state.selectedServices || []).forEach(s => formData.append('selectedServices[]', s));
+        formData.append('date', state.date || '');
+        formData.append('time', state.time || '');
+        // details
+        const details = state.details || {};
+        formData.append('fullName', details.fullName || '');
+        formData.append('email', details.email || '');
+        formData.append('phone', details.phone || '');
+        formData.append('street', details.street || '');
+        formData.append('location', details.location || '');
+        formData.append('address', details.address || '');
+        formData.append('notes', details.notes || '');
+
+        // attach files from file input if present
+        const photoInput = document.querySelector('#booking-photos');
+        if (photoInput && photoInput.files && photoInput.files.length) {
+          for (let i = 0; i < photoInput.files.length; i++) {
+            formData.append('files', photoInput.files[i], photoInput.files[i].name);
+          }
+        }
+
+        fetch(endpoint, {
+          method: 'POST',
+          body: formData
+        }).then((res) => res.json()).then((data) => {
+          state.loading = false;
+          if (data && data.ok) {
+            state.reference = data.reference || state.reference;
+            // store any image URLs returned by the backend so prefilled messages can include them
+            state.serviceDetails.photoUrls = Array.isArray(data.images) ? data.images : [];
+            state.success = true;
+          } else {
+            state.errors.general = data && (data.error || data.message) ? (data.error || data.message) : 'Failed to submit booking. Please try again.';
+          }
+          renderBookingModal();
+        }).catch((err) => {
+          state.loading = false;
+          state.errors.general = 'Network error while submitting booking. Please try again later.';
+          console.error('Booking submit error', err);
+          renderBookingModal();
+        });
+      } catch (err) {
+        state.loading = false;
+        state.errors.general = 'Unexpected error preparing booking data.';
+        console.error('Booking prepare error', err);
+        renderBookingModal();
       }
-      renderBookingModal();
-    }).catch((err) => {
-      state.loading = false;
-      state.errors.general = 'Network error while submitting booking. Please try again later.';
-      console.error('Booking submit error', err);
-      renderBookingModal();
-    });
-  } else {
+    } else {
     // no endpoint configured — fallback to local success flow
     console.warn('No bookingEndpoint configured in defaults; using local success flow.');
     const adminState = getAdminState();
@@ -1320,11 +1566,17 @@ function buildRequestDetailsEnglish(state) {
 }
 
 function buildWhatsAppMessage(state) {
-  return `Hello Elea, I would like to submit a cleaning request.\n\n${buildRequestDetailsEnglish(state)}${(state.serviceDetails && state.serviceDetails.photoNames && state.serviceDetails.photoNames.length) ? `\n\nSelected files: ${state.serviceDetails.photoNames.join(', ')}\nPlease attach these photos before sending.` : ''}`;
+  const base = `Hello Elea, I would like to submit a cleaning request.\n\n${buildRequestDetailsEnglish(state)}`;
+  const names = (state.serviceDetails && state.serviceDetails.photoNames && state.serviceDetails.photoNames.length) ? `\n\nSelected files: ${state.serviceDetails.photoNames.join(', ')}\n` : '';
+  const urls = (state.serviceDetails && state.serviceDetails.photoUrls && state.serviceDetails.photoUrls.length) ? `\n\nImages:\n${state.serviceDetails.photoUrls.join('\n')}` : '';
+  return `${base}${names}${urls}`;
 }
 
 function buildEmailBody(state) {
-  return `Cleaning request\n\n${buildRequestDetailsEnglish(state)}${(state.serviceDetails && state.serviceDetails.photoNames && state.serviceDetails.photoNames.length) ? `\n\nSelected files: ${state.serviceDetails.photoNames.join(', ')}\nPlease attach these photos before sending.` : ''}`;
+  const base = `Cleaning request\n\n${buildRequestDetailsEnglish(state)}`;
+  const names = (state.serviceDetails && state.serviceDetails.photoNames && state.serviceDetails.photoNames.length) ? `\n\nSelected files: ${state.serviceDetails.photoNames.join(', ')}\n` : '';
+  const urls = (state.serviceDetails && state.serviceDetails.photoUrls && state.serviceDetails.photoUrls.length) ? `\n\nImages:\n${state.serviceDetails.photoUrls.join('\n')}` : '';
+  return `${base}${names}${urls}`;
 }
 
 // Updated booking flow overrides. Kept together so every form value has one source of truth.
@@ -1734,6 +1986,9 @@ function renderAdminDashboard(selectedDate = document.body.dataset.calendarDate 
       if (field.name === 'whatsapp') field.value = state.site.whatsapp || defaults.whatsapp;
       if (field.name === 'instagram') field.value = state.site.instagram || defaults.instagram;
       if (field.name === 'footerText') field.value = state.site.footerText || 'Cleaning & Home Organization';
+      if (field.name === 'adminLoginEmail') {
+        field.value = document.getElementById('admin-current-user-email')?.textContent || field.value || 'eleaadmin@admin.com';
+      }
     });
   }
 
@@ -1808,6 +2063,13 @@ function initAdminPage() {
         section.classList.toggle('hidden', section.dataset.adminSection !== target);
       });
       document.querySelectorAll('[data-admin-tab]').forEach((btn) => btn.classList.toggle('active', btn.dataset.adminTab === target));
+      // Load remote admin data for certain tabs when selected
+      if (target === 'customers') {
+        loadAdminCustomersFromBackend();
+      }
+      if (target === 'bookings') {
+        loadAdminBookingsFromBackend();
+      }
     });
   });
 
@@ -1825,8 +2087,9 @@ function initAdminPage() {
   });
 
   const settingsForm = document.getElementById('admin-settings-form');
-  settingsForm?.addEventListener('submit', (event) => {
+  settingsForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
+
     const state = getAdminState();
     state.site.businessName = settingsForm.businessName.value.trim() || 'ELEA';
     state.site.phone = settingsForm.phone.value.trim() || defaults.phone;
@@ -1838,6 +2101,8 @@ function initAdminPage() {
     applyAdminSiteValues();
     renderHomepageContent();
     renderAdminDashboard();
+
+    await updateAdminCredentialsFromSettings(event);
   });
 
   const assetForm = document.getElementById('admin-asset-form');
@@ -1910,6 +2175,19 @@ function initAdminPage() {
       return;
     }
 
+    // Open booking details modal when clicking a booking card (but not its action buttons)
+    const bookingCard = event.target.closest('.admin-booking-card');
+    if (bookingCard) {
+      const data = bookingCard.dataset && bookingCard.dataset.booking ? bookingCard.dataset.booking : null;
+      if (data) {
+        try {
+          const bookingObj = JSON.parse(decodeURIComponent(data));
+          openBookingDetailsModal(bookingObj);
+          return;
+        } catch (e) { /* ignore parse errors */ }
+      }
+    }
+
     const reviewAction = event.target.closest('[data-review-action]');
     if (reviewAction) {
       const state = getAdminState();
@@ -1961,7 +2239,8 @@ function initAdminPage() {
   });
 
   document.querySelectorAll('[data-admin-logout]').forEach((button) => {
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
+      await handleAdminLogout();
       localStorage.removeItem(ADMIN_STORAGE_KEY);
       const resetState = getDefaultAdminState();
       saveAdminState(resetState);
@@ -1971,6 +2250,132 @@ function initAdminPage() {
       updateAdminTabBadges();
     });
   });
+
+  const authForm = document.getElementById('admin-auth-form');
+  authForm?.addEventListener('submit', handleAdminLogin);
+
+/* Customers / Users admin helpers */
+function renderAdminCustomers(customers) {
+  const target = document.getElementById('admin-customers-list');
+  if (!target) return;
+  if (!customers || customers.length === 0) {
+    target.innerHTML = '<div class="admin-note">No customers found.</div>';
+    return;
+  }
+  const table = document.createElement('table');
+  table.border = '1';
+  const thead = document.createElement('thead');
+  thead.innerHTML = '<tr><th>Name</th><th>Email</th><th>Phone</th><th>First Seen</th></tr>';
+  table.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  customers.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(c.customer_name || '')}</td><td>${escapeHtml(c.customer_email || '')}</td><td>${escapeHtml(c.customer_phone || '')}</td><td>${c.created_at ? new Date(c.created_at).toLocaleString() : ''}</td>`;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  target.innerHTML = '';
+  target.appendChild(table);
+}
+
+async function loadAdminCustomersFromBackend() {
+  try {
+    const res = await fetch((defaults.bookingEndpoint || '').replace('/api/bookings','') + '/api/admin/customers', { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to load customers: ' + res.statusText);
+    const payload = await res.json();
+    if (payload && payload.ok && Array.isArray(payload.customers)) {
+      renderAdminCustomers(payload.customers);
+    } else {
+      renderAdminCustomers([]);
+    }
+  } catch (err) {
+    console.warn('loadAdminCustomersFromBackend error', err);
+    const target = document.getElementById('admin-customers-list');
+    if (target) target.innerHTML = '<div class="admin-note">Unable to load customers: ' + escapeHtml(err.message) + '</div>';
+  }
+}
+
+async function loadAdminUsersFromBackend() {
+  try {
+    const res = await fetch((defaults.bookingEndpoint || '').replace('/api/bookings','') + '/api/admin/users', { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to load users: ' + res.statusText);
+    const payload = await res.json();
+    const usersTarget = document.getElementById('admin-users-list');
+    if (!usersTarget) return;
+    if (payload && payload.ok && Array.isArray(payload.users)) {
+      const table = document.createElement('table');
+      table.border = '1';
+      const thead = document.createElement('thead');
+      thead.innerHTML = '<tr><th>ID</th><th>Email</th><th>Phone</th><th>Created</th></tr>';
+      table.appendChild(thead);
+      const tbody = document.createElement('tbody');
+      payload.users.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${escapeHtml(u.id)}</td><td>${escapeHtml(u.email || '')}</td><td>${escapeHtml(u.phone || '')}</td><td>${u.created_at ? new Date(u.created_at).toLocaleString() : ''}</td>`;
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      usersTarget.innerHTML = '';
+      usersTarget.appendChild(table);
+    } else {
+      if (usersTarget) usersTarget.innerHTML = '<div class="admin-note">No users found.</div>';
+    }
+  } catch (err) {
+    console.warn('loadAdminUsersFromBackend error', err);
+  }
+}
+
+/* Bookings loader + renderer that uses backend data (includes uploaded images) */
+async function loadAdminBookingsFromBackend() {
+  try {
+    const res = await fetch((defaults.bookingEndpoint || '').replace('/api/bookings','') + '/api/admin/bookings', { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to load bookings: ' + res.statusText);
+    const payload = await res.json();
+    const bookingTarget = document.getElementById('admin-bookings-list');
+    if (!bookingTarget) return;
+    if (!(payload && payload.ok && Array.isArray(payload.bookings))) {
+      bookingTarget.innerHTML = '<div class="admin-note">No bookings found.</div>';
+      return;
+    }
+    const bookings = payload.bookings;
+    // Render bookings with image thumbnails
+    const stats = `
+      <div class="admin-stat-grid">
+        <div class="admin-stat-card"><span>Total</span><strong>${bookings.length}</strong></div>
+        <div class="admin-stat-card"><span>Pending</span><strong>${bookings.filter((b) => b.status !== 'confirmed').length}</strong></div>
+        <div class="admin-stat-card"><span>Confirmed</span><strong>${bookings.filter((b) => b.status === 'confirmed').length}</strong></div>
+      </div>
+    `;
+
+    const html = bookings.length ? stats + bookings.map((booking) => {
+      const imgs = (booking.booking_images || []).map(i => i.url || i.storage_path).filter(Boolean);
+      const imgHtml = imgs.length ? `<div class="booking-images">${imgs.map(u => `<a href="${u}" target="_blank" rel="noreferrer"><img class="booking-thumb" src="${u}" alt="booking image" loading="lazy"/></a>`).join('')}</div>` : '';
+      const bookingDataAttr = encodeURIComponent(JSON.stringify(booking));
+      return `
+      <article class="admin-card admin-booking-card" data-booking-id="${escapeHtml(booking.id)}" data-booking='${bookingDataAttr}'>
+        <div class="admin-card-top">
+          <div class="admin-card-ref">${escapeHtml(booking.reference_code || booking.reference || booking.id || '')}</div>
+          <span class="status-badge ${booking.status === 'confirmed' ? 'status-confirmed' : booking.status === 'pending' ? 'status-pending' : 'status-new'}">${escapeHtml(booking.status || 'new')}</span>
+        </div>
+        <div class="admin-card-meta">${escapeHtml(booking.customer_name || booking.name || 'Guest')} — ${escapeHtml(booking.customer_email || '')}</div>
+        <div class="admin-card-services">${escapeHtml(Array.isArray(booking.service_types) ? booking.service_types.join(', ') : (booking.service_types || booking.service || 'General'))}</div>
+        <div class="booking-meta-row"><span>${escapeHtml(booking.preferred_date || booking.date || '')}</span><span>${escapeHtml(booking.preferred_time || booking.time || '')}</span></div>
+        ${imgHtml}
+        <div class="booking-action-row">
+          <button class="action-btn approve" type="button" data-booking-action="confirm" data-booking-action-id="${escapeHtml(booking.id)}">Confirm</button>
+          <button class="action-btn delete" type="button" data-booking-action="delete" data-booking-action-id="${escapeHtml(booking.id)}">Delete</button>
+        </div>
+      </article>
+      `;
+    }).join('') : stats + '<div class="admin-note">No bookings recorded yet.</div>';
+
+    bookingTarget.innerHTML = html;
+  } catch (err) {
+    console.warn('loadAdminBookingsFromBackend error', err);
+    const bookingTarget = document.getElementById('admin-bookings-list');
+    if (bookingTarget) bookingTarget.innerHTML = '<div class="admin-note">Unable to load bookings: ' + escapeHtml(err.message) + '</div>';
+  }
+}
 
   renderAdminDashboard();
   updateAdminTabBadges();
@@ -2060,7 +2465,7 @@ function initFooterYear() {
     el.textContent = `© ${new Date().getFullYear()} Elea.`;
   });
 }
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   applyAdminSiteValues();
   // Force German as the primary site language on initial load
   setLang('de');
@@ -2076,6 +2481,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initAdminPage();
   initAdminCalendar();
   initAdminBookings();
+  const _adminAuthenticated = await refreshAdminAuthState();
+  if (_adminAuthenticated) {
+    // Load remote customer list for the admin panel
+    try { loadAdminCustomersFromBackend(); } catch (e) { /* non-fatal */ }
+  }
   // Promotions helpers
   try { initializeLaunchPromo(); renderBuiltInPromoCards(); bindPromotionsPage(); } catch (e) { /* non-fatal */ }
   initBerlinNotice();
