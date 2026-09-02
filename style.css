@@ -732,6 +732,49 @@ textarea.elea-input { resize: vertical; }
 .referral-forms .mt-2 { margin-top: .5rem; }
 .referral-forms .mt-3 { margin-top: .75rem; }
 
+/* Homepage promo grid — luxurious gold and holy green accents */
+body[data-page="home"] .promo-grid {
+  display: flex;
+  gap: 24px;
+  justify-content: flex-start;
+  align-items: stretch;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+body[data-page="home"] .promo-grid .promo-card {
+  flex: 0 0 320px;
+  max-width: 320px;
+  background: linear-gradient(180deg, #F7EBD6 0%, #F0E2C6 100%);
+  border: 1px solid rgba(172,130,55,0.18);
+  box-shadow: 0 18px 48px rgba(203,163,85,0.12), inset 0 1px 0 rgba(255,255,255,0.6);
+  color: hsl(var(--brand-forest));
+  text-align: left;
+  padding: 1.75rem;
+  border-radius: 16px;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+body[data-page="home"] .promo-grid .promo-card img { border-radius: 10px; margin-bottom: 12px; box-shadow: 0 8px 24px rgba(203,163,85,0.08); }
+
+/* Middle card emphasised in 'holy' green */
+body[data-page="home"] .promo-grid .promo-card:nth-child(2) {
+  background: linear-gradient(180deg, #0F6B55 0%, #0B4E40 100%);
+  color: #fff;
+  border-color: rgba(0,0,0,0.12);
+  box-shadow: 0 20px 60px rgba(11,75,57,0.28), 0 2px 0 rgba(255,255,255,0.06) inset;
+}
+body[data-page="home"] .promo-grid .promo-card:nth-child(2) .promo-eyebrow,
+body[data-page="home"] .promo-grid .promo-card:nth-child(2) h3,
+body[data-page="home"] .promo-grid .promo-card:nth-child(2) p,
+body[data-page="home"] .promo-grid .promo-card:nth-child(2) a { color: rgba(255,255,255,0.95); }
+
+body[data-page="home"] .promo-grid .promo-card .promo-card-body { text-align: left; }
+body[data-page="home"] .promo-grid .promo-card:hover { transform: translateY(-6px); box-shadow: 0 26px 70px rgba(203,163,85,0.18); }
+
+@media (max-width: 900px) {
+  body[data-page="home"] .promo-grid { justify-content: center; }
+  body[data-page="home"] .promo-grid .promo-card { flex: 1 1 100%; max-width: 640px; }
+}
+
 @media (max-width: 900px) {
   .promo-card { padding: 1.25rem; margin: 0 1rem 1rem; }
 }
@@ -1037,6 +1080,30 @@ textarea.elea-input { resize: vertical; }
   background: hsl(var(--secondary));
   padding-top: clamp(3rem, 2.5rem + 3vw, 6rem);
   padding-bottom: clamp(3rem, 2.5rem + 3vw, 6rem);
+}
+
+/* Use Elea logo as a subtle background watermark on the home satisfaction card */
+body[data-page="home"] .satisfaction-band {
+  position: relative;
+  overflow: hidden;
+}
+body[data-page="home"] .satisfaction-band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url('assets/best.png');
+  background-repeat: no-repeat;
+  background-position: center right;
+  background-size: 540px;
+  opacity: 0.26;
+  filter: grayscale(10%) blur(0px) contrast(1.02) drop-shadow(0 6px 18px rgba(11,75,57,0.14));
+  pointer-events: none;
+  z-index: 0;
+  mix-blend-mode: overlay;
+}
+body[data-page="home"] .satisfaction-band .satisfaction-inner { position: relative; z-index: 1; }
+@media (max-width: 900px) {
+  body[data-page="home"] .satisfaction-band::before { background-size: 320px; opacity: 0.20; background-position: center; mix-blend-mode: normal; filter: grayscale(5%) contrast(1.02); }
 }
 .satisfaction-inner { max-width: 54rem; margin: 0 auto; text-align: center; padding: 0 1.5rem; }
 .satisfaction-text {
