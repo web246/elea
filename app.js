@@ -24,19 +24,19 @@ function getSupabaseClient() {
     const modal = document.getElementById('booking-modal');
     if (!modal) return;
     const imgs = (booking.booking_images || []).map(i => i.url || i.storage_path).filter(Boolean);
-    const imagesHtml = imgs.length ? `<div class="booking-details-images">${imgs.map(u => `<a href="${u}" target="_blank" rel="noreferrer"><img src="${u}" alt="booking image" loading="lazy"/></a>`).join('')}</div>` : '<div class="admin-note">No images attached.</div>';
+    const imagesHtml = imgs.length ? `<div class="booking-details-images">${imgs.map(u => `<a href="${u}" target="_blank" rel="noreferrer"><img src="${u}" alt="booking image" loading="lazy"/></a>`).join('')}</div>` : `<div class="admin-note">${t('admin.bookingDetails.noImages')}</div>`;
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
     modal.innerHTML = `
-      <div class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">Booking ${escapeHtml(booking.reference_code || booking.id || '')}</div><button class="booking-close" data-booking-close aria-label="Close"><i data-lucide="x"></i></button></div></div>
+      <div class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">${t('admin.bookingDetails.title')} ${escapeHtml(booking.reference_code || booking.id || '')}</div><button class="booking-close" data-booking-close aria-label="${t('common.close')}"><i data-lucide="x"></i></button></div></div>
       <div class="elea-container booking-body">
-        <div class="booking-detail-row"><strong>Customer:</strong> ${escapeHtml(booking.customer_name || booking.name || '')}</div>
-        <div class="booking-detail-row"><strong>Email:</strong> ${escapeHtml(booking.customer_email || '')}</div>
-        <div class="booking-detail-row"><strong>Phone:</strong> ${escapeHtml(booking.customer_phone || '')}</div>
-        <div class="booking-detail-row"><strong>Services:</strong> ${escapeHtml(Array.isArray(booking.service_types) ? booking.service_types.join(', ') : (booking.service_types || booking.service || ''))}</div>
-        <div class="booking-detail-row"><strong>Date / Time:</strong> ${escapeHtml(booking.preferred_date || booking.date || '')} ${escapeHtml(booking.preferred_time || booking.time || '')}</div>
-        <div class="booking-detail-row"><strong>Notes:</strong> ${escapeHtml(booking.notes || '')}</div>
-        <h3>Attached Images</h3>
+        <div class="booking-detail-row"><strong>${t('admin.bookingDetails.customer')}</strong> ${escapeHtml(booking.customer_name || booking.name || '')}</div>
+        <div class="booking-detail-row"><strong>${t('admin.bookingDetails.email')}</strong> ${escapeHtml(booking.customer_email || '')}</div>
+        <div class="booking-detail-row"><strong>${t('admin.bookingDetails.phone')}</strong> ${escapeHtml(booking.customer_phone || '')}</div>
+        <div class="booking-detail-row"><strong>${t('admin.bookingDetails.services')}</strong> ${escapeHtml(Array.isArray(booking.service_types) ? booking.service_types.join(', ') : (booking.service_types || booking.service || ''))}</div>
+        <div class="booking-detail-row"><strong>${t('admin.bookingDetails.dateTime')}</strong> ${escapeHtml(booking.preferred_date || booking.date || '')} ${escapeHtml(booking.preferred_time || booking.time || '')}</div>
+        <div class="booking-detail-row"><strong>${t('admin.bookingDetails.notes')}</strong> ${escapeHtml(booking.notes || '')}</div>
+        <h3>${t('admin.bookingDetails.attachedImages')}</h3>
         ${imagesHtml}
       </div>
     `;
@@ -108,7 +108,7 @@ async function handleAdminLogin(event) {
 
   if (!supabase || !emailField || !passwordField) {
     if (messageNode) {
-      messageNode.textContent = 'Supabase client is unavailable.';
+      messageNode.textContent = t('errors.supabaseUnavailable');
       messageNode.style.color = '#c03f3f';
     }
     return;
@@ -119,21 +119,21 @@ async function handleAdminLogin(event) {
 
   if (!email || !password) {
     if (messageNode) {
-      messageNode.textContent = 'Email and password are required.';
+      messageNode.textContent = t('errors.emailPasswordRequired');
       messageNode.style.color = '#c03f3f';
     }
     return;
   }
 
   if (messageNode) {
-    messageNode.textContent = 'Signing in...';
+    messageNode.textContent = t('errors.signingIn');
     messageNode.style.color = '#5f7f70';
   }
 
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     if (messageNode) {
-      messageNode.textContent = error.message || 'Login failed.';
+      messageNode.textContent = error.message || t('errors.loginFailed');
       messageNode.style.color = '#c03f3f';
     }
     return;
@@ -142,7 +142,7 @@ async function handleAdminLogin(event) {
   const userEmail = data?.user?.email || email;
   setAdminAuthVisibility(true, userEmail);
   if (messageNode) {
-    messageNode.textContent = 'Signed in successfully.';
+    messageNode.textContent = t('errors.signedIn');
     messageNode.style.color = '#5f7f70';
   }
   if (document.getElementById('admin-settings-form')) {
@@ -178,7 +178,7 @@ async function updateAdminCredentialsFromSettings(event) {
 
   if (password && password !== passwordConfirm) {
     if (messageNode) {
-      messageNode.textContent = 'Passwords do not match.';
+      messageNode.textContent = t('errors.passwordsDoNotMatch');
       messageNode.style.color = '#c03f3f';
     }
     return;
@@ -186,7 +186,7 @@ async function updateAdminCredentialsFromSettings(event) {
 
   try {
     if (messageNode) {
-      messageNode.textContent = 'Saving admin changes...';
+      messageNode.textContent = t('errors.savingAdmin');
       messageNode.style.color = '#5f7f70';
     }
 
@@ -208,7 +208,7 @@ async function updateAdminCredentialsFromSettings(event) {
     }
 
     if (messageNode) {
-      messageNode.textContent = 'Admin credentials updated successfully.';
+      messageNode.textContent = t('errors.adminUpdated');
       messageNode.style.color = '#5f7f70';
     }
 
@@ -222,7 +222,7 @@ async function updateAdminCredentialsFromSettings(event) {
     if (currentUserBadge) currentUserBadge.textContent = latestUserEmail;
   } catch (error) {
     if (messageNode) {
-      messageNode.textContent = error.message || 'Unable to update admin credentials.';
+      messageNode.textContent = error.message || t('errors.unableUpdateAdmin');
       messageNode.style.color = '#c03f3f';
     }
   }
@@ -290,7 +290,7 @@ function getDefaultAdminState() {
       whatsapp: defaults.whatsapp,
       instagram: defaults.instagram,
       instagramDisplay: defaults.instagramDisplay,
-      footerText: 'Cleaning & Home Organization'
+      footerText: 'Reinigung & Hausorganisation'
     },
     bookings: [],
     reviews: [],
@@ -503,6 +503,25 @@ const translations = {
     admin: { bookings: 'Bookings', reviews: 'Reviews', settings: 'Settings' },
     common: { continue: 'Continue', back: 'Back', save: 'Save', close: 'Close' }
   },
+  admin: {
+    bookingDetails: { title: 'Booking', customer: 'Customer:', email: 'Email:', phone: 'Phone:', services: 'Services:', dateTime: 'Date / Time:', notes: 'Notes:', attachedImages: 'Attached Images', noImages: 'No images attached.' }
+  },
+  // short common error / state messages used directly in code
+  errors: {
+    supabaseUnavailable: 'Supabase client is unavailable.',
+    emailPasswordRequired: 'Email and password are required.',
+    passwordsDoNotMatch: 'Passwords do not match.',
+    savingAdmin: 'Saving admin changes...',
+    adminUpdated: 'Admin credentials updated successfully.',
+    unableUpdateAdmin: 'Unable to update admin credentials.',
+    signingIn: 'Signing in...',
+    loginFailed: 'Login failed.',
+    signedIn: 'Signed in successfully.',
+    submitting: 'Submitting...',
+    bookingFailed: 'Failed to submit booking. Please try again.',
+    bookingNetworkError: 'Network error while submitting booking. Please try again later.',
+    bookingUnexpected: 'Unexpected error preparing booking data.'
+  },
   de: {
     nav: { home: 'Startseite', about: 'Über uns', services: 'Leistungen', promotions: 'Vorteile', transformations: 'Verwandlungen', reviews: 'Bewertungen', contact: 'Kontakt', book: 'Jetzt buchen' },
     hero: { eyebrow: 'REINIGUNG & HAUSORGANISATION', headline: 'Ein sauberer Ort. Ein ruhigeres Leben.', body: 'Premium-Reinigungs- und Hausorganisationsdienste, die Ihr Berliner Zuhause frisch, schön und mühelos organisiert wirken lassen.', cta1: 'Service buchen', cta2: 'WhatsApp schreiben', manifesto: 'Ihr Zuhause, liebevoll betreut.' },
@@ -614,7 +633,26 @@ const translations = {
     legalPages: { impressum: 'Impressum', datenschutz: 'Datenschutz', terms: 'AGB', cancellation: 'Buchung & Stornierung' },
     auth: { login: { title: 'Willkommen zurück', subtitle: 'Melden Sie sich bei Ihrem Konto an', footer: 'Sie haben noch kein Konto?', create: 'Erstellen Sie eines', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', forgot: 'Passwort vergessen?', submitLabel: 'Anmelden', loading: 'Anmeldung...' }, register: { title: 'Konto erstellen', subtitle: 'Registrieren Sie sich, um loszulegen', footer: 'Sie haben bereits ein Konto?', login: 'Anmelden', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', confirm: 'Passwort bestätigen', submitLabel: 'Konto erstellen', loading: 'Erstellen...' }, verify: { title: 'E-Mail verifizieren', subtitle: 'Wir haben einen Code an', resend: 'Erneut senden', verify: 'Verifizieren', verifying: 'Verifizieren...' }, forgot: { title: 'Passwort vergessen?', subtitle: 'Wir senden Ihnen einen Link zum Zurücksetzen', submit: 'Link senden', email: 'E-Mail', success: 'Wenn ein Konto für diese E-Mail existiert, haben wir einen Link zum Zurücksetzen gesendet.' }, reset: { title: 'Passwort zurücksetzen', subtitle: 'Wählen Sie ein neues Passwort', new: 'Neues Passwort', confirm: 'Passwort bestätigen', submit: 'Passwort zurücksetzen' } },
     admin: { bookings: 'Buchungen', reviews: 'Bewertungen', settings: 'Einstellungen' },
-    common: { continue: 'Weiter', back: 'Zurück', save: 'Speichern', close: 'Schließen' }
+    common: { continue: 'Weiter', back: 'Zurück', save: 'Speichern', close: 'Schließen' },
+    errors: {
+      supabaseUnavailable: 'Supabase-Client ist nicht verfügbar.',
+      emailPasswordRequired: 'E-Mail und Passwort sind erforderlich.',
+      passwordsDoNotMatch: 'Passwörter stimmen nicht überein.',
+      savingAdmin: 'Speichere Admin-Änderungen...',
+      adminUpdated: 'Admin-Anmeldedaten erfolgreich aktualisiert.',
+      unableUpdateAdmin: 'Admin-Anmeldedaten konnten nicht aktualisiert werden.',
+      signingIn: 'Anmeldung läuft...',
+      loginFailed: 'Anmeldung fehlgeschlagen.',
+      signedIn: 'Erfolgreich angemeldet.',
+      submitting: 'Wird gesendet...',
+      bookingFailed: 'Buchung konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+      bookingNetworkError: 'Netzwerkfehler beim Senden der Buchung. Bitte versuchen Sie es später erneut.',
+      bookingUnexpected: 'Unerwarteter Fehler beim Vorbereiten der Buchung.'
+    }
+    ,
+    admin: {
+      bookingDetails: { title: 'Buchung', customer: 'Kunde:', email: 'E-Mail:', phone: 'Telefon:', services: 'Leistungen:', dateTime: 'Datum / Uhrzeit:', notes: 'Notizen:', attachedImages: 'Angehängte Bilder', noImages: 'Keine Bilder angehängt.' }
+    }
   }
 };
 
@@ -1139,7 +1177,7 @@ function renderBookingModal() {
   lucide.createIcons();
   if (state.loading) {
     modal.querySelectorAll('.booking-submit-button').forEach((btn) => {
-      try { btn.disabled = true; btn.classList.add('disabled'); btn.textContent = 'Submitting...'; } catch (e) { /* ignore */ }
+      try { btn.disabled = true; btn.classList.add('disabled'); btn.textContent = t('errors.submitting'); } catch (e) { /* ignore */ }
     });
   }
   modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal);
@@ -1474,18 +1512,18 @@ function submitBookingModal() {
             state.serviceDetails.photoUrls = Array.isArray(data.images) ? data.images : [];
             state.success = true;
           } else {
-            state.errors.general = data && (data.error || data.message) ? (data.error || data.message) : 'Failed to submit booking. Please try again.';
+            state.errors.general = data && (data.error || data.message) ? (data.error || data.message) : t('errors.bookingFailed');
           }
           renderBookingModal();
         }).catch((err) => {
           state.loading = false;
-          state.errors.general = 'Network error while submitting booking. Please try again later.';
+          state.errors.general = t('errors.bookingNetworkError');
           console.error('Booking submit error', err);
           renderBookingModal();
         });
       } catch (err) {
         state.loading = false;
-        state.errors.general = 'Unexpected error preparing booking data.';
+        state.errors.general = t('errors.bookingUnexpected');
         console.error('Booking prepare error', err);
         renderBookingModal();
       }
@@ -1985,7 +2023,7 @@ function renderAdminDashboard(selectedDate = document.body.dataset.calendarDate 
       if (field.name === 'email') field.value = state.site.email || defaults.email;
       if (field.name === 'whatsapp') field.value = state.site.whatsapp || defaults.whatsapp;
       if (field.name === 'instagram') field.value = state.site.instagram || defaults.instagram;
-      if (field.name === 'footerText') field.value = state.site.footerText || 'Cleaning & Home Organization';
+      if (field.name === 'footerText') field.value = state.site.footerText || 'Reinigung & Hausorganisation';
       if (field.name === 'adminLoginEmail') {
         field.value = document.getElementById('admin-current-user-email')?.textContent || field.value || 'eleaadmin@admin.com';
       }
@@ -2096,7 +2134,7 @@ function initAdminPage() {
     state.site.email = settingsForm.email.value.trim() || defaults.email;
     state.site.whatsapp = settingsForm.whatsapp.value.trim() || defaults.whatsapp;
     state.site.instagram = settingsForm.instagram.value.trim() || defaults.instagram;
-    state.site.footerText = settingsForm.footerText.value.trim() || 'Cleaning & Home Organization';
+    state.site.footerText = settingsForm.footerText.value.trim() || 'Reinigung & Hausorganisation';
     saveAdminState(state);
     applyAdminSiteValues();
     renderHomepageContent();
