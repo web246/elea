@@ -69,7 +69,7 @@ function mergeAssetCatalog(assets) {
 function getDefaultAdminState() {
   return {
     site: {
-      businessName: 'ELEA',
+          businessName: 'ELEA',
       phone: defaults.phone,
       email: defaults.email,
       whatsapp: defaults.whatsapp,
@@ -80,7 +80,7 @@ function getDefaultAdminState() {
     bookings: [],
     reviews: [],
     ctas: [],
-    assets: getDefaultAssetCatalog()
+      assets: Array.isArray(getDefaultAssetCatalog()) ? getDefaultAssetCatalog() : []
   };
 }
 
@@ -109,7 +109,7 @@ function getAdminState() {
   try {
     const raw = localStorage.getItem(ADMIN_STORAGE_KEY);
     if (raw) {
-      const parsed = normalizeAdminState(JSON.parse(raw));
+      const parsed = normalizeAdminState(JSON.parse(raw || '{}'));
       if (JSON.stringify(parsed) !== raw) {
         localStorage.setItem(ADMIN_STORAGE_KEY, JSON.stringify(parsed));
       }
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const src = img.getAttribute('src');
     if (!src) return;
     if (src && (src.endsWith('assets/logo.jpeg') || src.endsWith('/assets/logo.png') || src.endsWith('/assets/logo.jpeg') || src === 'assets/logo.jpeg' || src === 'assets/logo.png')) {
-      img.setAttribute('src', 'assets/best.png');
+            img.setAttribute('src', 'assets/best.png');
     }
   });
   // Replace favicon / apple touch icon
@@ -229,10 +229,10 @@ const translations = {
       detailsQuestion: 'Your contact details',
       fullName: 'Full name', phone: 'Phone', email: 'Email', country: 'Country', postcode: 'ZIP code', street: 'Street', location: 'Location', address: 'Address', notes: 'Additional notes',
       countryOptions: [
-        { value: 'DE', label: '🇩🇪 Germany (+49)' },
-        { value: 'US', label: '🇺🇸 United States (+1)' },
-        { value: 'GB', label: '🇬🇧 United Kingdom (+44)' },
-        { value: 'KE', label: '🇰🇪 Kenya (+254)' }
+        { value: 'DE', label: '🇩🇪 Deutschland (+49)' },
+        { value: 'US', label: '🇺🇸 Vereinigte Staaten (+1)' },
+        { value: 'GB', label: '🇬🇧 Vereinigtes Königreich (+44)' },
+        { value: 'KE', label: '🇰🇪 Kenia (+254)' }
       ],
       postcodeOptions: ['10115', '10117', '10119', '10178', '10243', '10435', '10437', '10439', '10551', '10557', '10629', '10777', '10779', '10961', '10963', '12043', '12045', '12047', '12099', '12157', '12163', '12203', '12247', '12347', '12435', '12459', '12487', '13347', '13349', '13581', '13585', '13589', '14193', '14199', '14305', '14309'],
       streetOptions: ['Friedrichstraße', 'Schönhauser Allee', 'Bergmannstraße', 'Kottbusser Damm', 'Müllerstraße', 'Torstraße', 'Potsdamer Straße', 'Oranienburger Straße', 'Hauptstraße', 'Kaiserstraße', 'Prenzlauer Allee', 'Frankfurter Allee', 'Other'],
@@ -240,12 +240,15 @@ const translations = {
       reviewQuestion: 'Review your request',
       successTitle: 'Request Received', successBody: 'Your booking request has been received. Elea will contact you via WhatsApp or email to confirm availability and final details.', referenceLabel: 'Your booking reference', whatsappBtn: 'Send via WhatsApp', emailBtn: 'Send via Email', closeBtn: 'Close',
       required: 'This field is required', selectService: 'Please select at least one service', selectRooms: 'Please select the number of rooms', selectDate: 'Please select a date', selectTime: 'Please select a time',
+      selectOption: 'Select an option',
+      completeProperty: 'Please complete all property details.',
+      completeContact: 'Please complete all required contact details.',
       rooms: ['1', '2', '3', '4', '5', '6+'],
       areas: ['Kitchen', 'Bathroom', 'Bedroom', 'Living room', 'Windows', 'Oven', 'Appliances', 'Wardrobe', 'Other'],
       times: ['08:00', '10:00', '12:00', '14:00', '16:00'],
       types: [
-        { name: 'Regular Cleaning', desc: 'Routine maintenance cleaning to keep your home consistently fresh.' },
-        { name: 'Deep Cleaning', desc: 'A thorough, detailed clean reaching every surface and corner.' }
+        { name: 'Regelmäßige Reinigung', desc: 'Regelmäßige Unterhaltsreinigung für ein konstant frisches Zuhause.' },
+        { name: 'Tiefenreinigung', desc: 'Eine gründliche, detaillierte Reinigung jeder Oberfläche und Ecke.' }
       ]
     },
     about: { eyebrow: 'About Elea', heading: 'Founded on care and detail.', body1: 'Elea was founded by Joan Kayaga in Berlin with a simple conviction: that a clean, organized home is the foundation of a calmer, more intentional life.', body2: 'What began as a commitment to meticulous, respectful home care has grown into a full-service home organization brand — one that treats every home as a space worthy of genuine attention. From routine cleaning to complete wardrobe transformations, Elea approaches each visit with the same editorial standard: nothing overlooked, nothing rushed.', body3: 'We believe home care is not a transaction but a relationship. We learn your space, respect your routines, and return with consistency — so your home always feels cared for, never just cleaned.', founderRole: 'Founder', quote: 'A clean, organized home is the foundation of a calmer life. That belief is in every visit we make.', valuesHeading: 'What guides us', standardHeading: 'The Elea standard', valuesSubheading: 'Four commitments we keep at every home we visit — no exceptions, no shortcuts.', care: 'Care', careDesc: 'Every home is treated as if it were our own — with patience, respect and genuine attention.', detail: 'Detail', detailDesc: "The difference is in the details. We look where others don't, and we don't leave until it's right.", consistency: 'Consistency', consistencyDesc: "A standard that doesn't slip. The same quality, every visit, every time.", trust: 'Trust', trustDesc: 'Vetted professionals, transparent communication, and a satisfaction guarantee you can rely on.', cta: 'Ready for a calmer home?', bookService: 'Book a Service' },
@@ -350,6 +353,9 @@ const translations = {
       reviewQuestion: 'Überprüfen Sie Ihre Anfrage',
       successTitle: 'Anfrage eingegangen', successBody: 'Ihre Buchungsanfrage ist eingegangen. Elea wird Sie per WhatsApp oder E-Mail kontaktieren, um Verfügbarkeit und Details zu bestätigen.', referenceLabel: 'Ihre Buchungsreferenz', whatsappBtn: 'Per WhatsApp senden', emailBtn: 'Per E-Mail senden', closeBtn: 'Schließen',
       required: 'Dieses Feld ist erforderlich', selectService: 'Bitte wählen Sie mindestens eine Leistung', selectRooms: 'Bitte wählen Sie die Anzahl der Räume', selectDate: 'Bitte wählen Sie ein Datum', selectTime: 'Bitte wählen Sie eine Zeit',
+      selectOption: 'Bitte wählen',
+      completeProperty: 'Bitte füllen Sie alle Immobilienangaben aus.',
+      completeContact: 'Bitte füllen Sie alle erforderlichen Kontaktdaten aus.',
       rooms: ['1', '2', '3', '4', '5', '6+'],
       areas: ['Küche', 'Badezimmer', 'Schlafzimmer', 'Wohnzimmer', 'Fenster', 'Ofen', 'Geräte', 'Kleiderschrank', 'Andere'],
       times: ['08:00', '10:00', '12:00', '14:00', '16:00'],
@@ -398,14 +404,14 @@ const translations = {
 };
 
 const serviceData = [
-  { key: 'Home Cleaning', titleKey: 'services.s1.title', title: 'Home Cleaning', desc: 'Comprehensive cleaning of your entire home — bathrooms, kitchen, living spaces and bedrooms, approached with editorial precision.' },
-  { key: 'Move-In', titleKey: 'services.s2.title', title: 'Move-In', desc: 'Begin fresh. A thorough top-to-bottom clean so your new home feels truly yours from the very first day.' },
-  { key: 'Move-Out', titleKey: 'services.s3.title', title: 'Move-Out', desc: 'Leave it beautiful. Detailed cleaning to hand over your space in immaculate condition and recover your deposit.' },
-  { key: 'After-Renovation', titleKey: 'services.s4.title', title: 'After-Renovation', desc: 'Post-construction dust and debris removed with care, revealing the finished beauty of your renewed space.' },
-  { key: 'Oven & Appliance', titleKey: 'services.s5.title', title: 'Oven & Appliance', desc: 'Deep restoration of ovens, refrigerators and appliances — degreased, descaled and brought back to gleaming.' },
-  { key: 'Scheduled Laundry', titleKey: 'services.s6.title', title: 'Scheduled Laundry', desc: 'Washing, folding and care of linens and garments on a schedule that fits seamlessly into your routine.' },
-  { key: 'Window Cleaning', titleKey: 'services.s7.title', title: 'Window Cleaning', desc: 'Streak-free clarity for every pane — letting Berlin\'s light pour into your home unhindered.' },
-  { key: 'Home Organization', titleKey: 'services.s8.title', title: 'Home Organization', desc: 'Wardrobes, sitting rooms and storage reimagined — systems that bring lasting order and calm to your space.' }
+  { key: 'Home Cleaning', titleKey: 'services.s1.title', title: 'Hausreinigung', desc: 'Umfassende Reinigung Ihres gesamten Zuhauses — Badezimmer, Küche, Wohnräume und Schlafzimmer, mit redaktioneller Präzision.' },
+  { key: 'Move-In', titleKey: 'services.s2.title', title: 'Einzug', desc: 'Frisch beginnen. Eine gründliche Reinigung von oben bis unten, damit sich Ihr neues Zuhause vom ersten Tag an wirklich als Ihres anfühlt.' },
+  { key: 'Move-Out', titleKey: 'services.s3.title', title: 'Auszug', desc: 'Hinterlassen Sie es makellos. Detaillierte Reinigung zur Übergabe Ihres Raums in einwandfreiem Zustand und zur Sicherung Ihrer Kaution.' },
+  { key: 'After-Renovation', titleKey: 'services.s4.title', title: 'Nach der Renovierung', desc: 'Staub und Schutt nach dem Umbau sorgfältig entfernt — für die volle Schönheit Ihres erneuerten Raums.' },
+  { key: 'Oven & Appliance', titleKey: 'services.s5.title', title: 'Ofen & Geräte', desc: 'Tiefenreinigung von Öfen, Kühlschränken und Geräten — entfettet, entkalkt und wieder zum Glänzen gebracht.' },
+  { key: 'Scheduled Laundry', titleKey: 'services.s6.title', title: 'Geplante Wäsche', desc: 'Waschen, Falten und Pflege von Wäsche und Kleidung nach einem Zeitplan, der sich nahtlos in Ihren Alltag einfügt.' },
+  { key: 'Window Cleaning', titleKey: 'services.s7.title', title: 'Fensterreinigung', desc: 'Streifenfreie Klarheit für jede Scheibe — damit Berlins Licht ungehindert in Ihr Zuhause fällt.' },
+  { key: 'Home Organization', titleKey: 'services.s8.title', title: 'Hausorganisation', desc: 'Kleiderschränke, Wohnräume und Stauraum neu gedacht — Systeme, die dauerhafte Ordnung und Ruhe in Ihren Raum bringen.' }
 ];
 
 const countryOptions = [
@@ -428,7 +434,19 @@ const pageLanguageMap = {
 };
 
 function getLang() {
-  return localStorage.getItem('elea-lang') || 'en';
+  // German is the site default. Migrate the old implicit English default once,
+  // while retaining any language selection made after this release.
+  try {
+    const languageVersion = localStorage.getItem('elea-lang-default-version');
+    if (languageVersion !== '2') {
+      localStorage.setItem('elea-lang-default-version', '2');
+      localStorage.setItem('elea-lang', 'de');
+      return 'de';
+    }
+    return localStorage.getItem('elea-lang') || 'de';
+  } catch (e) {
+    return 'de';
+  }
 }
 
 function setLang(lang) {
@@ -474,13 +492,19 @@ function hasTranslation(key, lang) {
 }
 
 function t(key) {
+  if (typeof key !== 'string') return key || '';
   const lang = getLang();
   const parts = key.split('.');
   let val = translations[lang];
   for (const part of parts) {
     val = val && val[part];
   }
-  return val || key;
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string' || typeof val === 'number') return val;
+  // Some translation keys represent arrays (e.g. times, streetOptions). Return
+  // an empty array as a safe default to avoid runtime `.map` errors.
+  if (String(key).includes('times') || String(key).includes('Options') || String(key).includes('stepLabels')) return [];
+  return key;
 }
 
 function applyTranslations() {
@@ -551,6 +575,21 @@ function applyTranslations() {
     const fsTitle = document.querySelector('.footer-services .footer-services-title');
     if (fsTitle) fsTitle.textContent = t('services.eyebrow') || fsTitle.textContent;
   } catch (e) { /* non-fatal */ }
+
+  // Ensure any booking/service toggle titles reflect the current language
+  try {
+    document.querySelectorAll('.booking-toggle, .service-card, .booking-toggle .toggle-title').forEach((el) => {
+      // find the button element that carries the dataset key
+      const btn = el.closest ? el.closest('button') : (el.tagName === 'BUTTON' ? el : null);
+      if (!btn) return;
+      const key = btn.dataset.serviceSelect || btn.dataset.service || btn.dataset.serviceKey || btn.dataset.serviceKey;
+      if (!key) return;
+      const svc = (serviceData || []).find(s => s.key === key);
+      const title = svc ? (svc.titleKey ? t(svc.titleKey) : (svc.title || svc.key)) : key;
+      const titleEl = btn.querySelector('.toggle-title') || btn.querySelector('.service-card-title') || btn;
+      if (titleEl) titleEl.textContent = title;
+    });
+  } catch (e) { /* ignore translation sync errors */ }
 }
 
 function initNavbar() {
@@ -793,6 +832,7 @@ function initReviewModal() {
   });
 }
 
+/* Booking flow: the request is only handed to a delivery channel after the customer chooses WhatsApp or email. */
 function openBookingModal(serviceName = '') {
   const modal = document.getElementById('booking-modal');
   if (!modal) return;
@@ -802,14 +842,15 @@ function openBookingModal(serviceName = '') {
     step: 0,
     serviceOptions: serviceData.map(item => item.key),
     selectedServices: serviceName ? [serviceName] : [],
-    rooms: '',
-    areas: [],
-    cleaningType: '',
+    property: { type: '', size: '', bedrooms: '', bathrooms: '', kitchens: '', livingRooms: '', toilets: '', balconies: '', floors: '', elevator: '', condition: '', lastProfessionalCleaning: '' },
+    serviceDetails: { furnished: '', empty: '', appliances: [], otherAppliance: '', renovationDust: '', photoNames: [] },
     date: '',
     time: '',
     details: { fullName: '', phone: '', email: '', street: '', location: '', address: '', notes: '' },
     errors: {},
-    success: false,
+    estimateReview: false,
+    deliveryChoice: false,
+    delivered: false,
     reference: ''
   };
 
@@ -875,7 +916,7 @@ function renderBookingModal() {
       <div class="booking-step-panel">${renderBookingStep(state)}</div>
       <div class="booking-actions">
         <button class="booking-back ${state.step === 0 ? 'disabled' : ''}" ${state.step === 0 ? 'disabled' : ''} data-booking-back><i data-lucide="arrow-left"></i> ${t('booking.back')}</button>
-        ${state.step < 6 ? `<button class="booking-submit-button" data-booking-next>${t('booking.next')} <i data-lucide="arrow-right"></i></button>` : `<button class="booking-submit-button" data-booking-submit>${t('booking.submit')} <i data-lucide="arrow-right"></i></button>`}
+        ${state.step < 6 ? `<button type="button" class="booking-submit-button" data-booking-next>${t('booking.next')} <i data-lucide="arrow-right"></i></button>` : `<button type="button" class="booking-submit-button" data-booking-submit>${t('booking.submit')} <i data-lucide="arrow-right"></i></button>`}
       </div>
       <div class="booking-error ${state.errors.general ? 'show' : ''}">${state.errors.general || ''}</div>
     </div>
@@ -1020,7 +1061,7 @@ function renderBookingStep(state) {
           const active = state.selectedServices.includes(service.key);
           return `
             <button class="booking-toggle ${active ? 'active' : ''}" data-service-select="${service.key}">
-              <span class="toggle-title">${t(service.titleKey)}</span>
+              <span class="toggle-title">${service.titleKey ? t(service.titleKey) : (service.title || service.key)}</span>
               <span class="toggle-check"><i data-lucide="check"></i></span>
             </button>
           `;
@@ -1034,7 +1075,7 @@ function renderBookingStep(state) {
       <div class="mb-8">
         <p class="elea-eyebrow">${t('booking.roomsLabel')}</p>
         <div class="booking-room-grid mt-4">
-          ${t('booking.rooms').map((room) => `
+          ${(Array.isArray(t('booking.rooms')) ? t('booking.rooms') : []).map((room) => `
             <button class="booking-room-btn ${state.rooms === room ? 'active' : ''}" data-room-select="${room}">${room}</button>
           `).join('')}
         </div>
@@ -1042,7 +1083,7 @@ function renderBookingStep(state) {
       <div>
         <p class="elea-eyebrow">${t('booking.areasLabel')}</p>
         <div class="booking-area-grid mt-4">
-          ${t('booking.areas').map((area) => `
+          ${(Array.isArray(t('booking.areas')) ? t('booking.areas') : []).map((area) => `
             <button class="booking-area-btn ${state.areas.includes(area) ? 'active' : ''}" data-area-select="${area}">${area}</button>
           `).join('')}
         </div>
@@ -1053,7 +1094,7 @@ function renderBookingStep(state) {
     return `
       <h2 class="elea-heading booking-step-question">${t('booking.typeQuestion')}</h2>
       <div class="booking-type-grid">
-        ${t('booking.types').map((type, idx) => {
+        ${(Array.isArray(t('booking.types')) ? t('booking.types') : []).map((type, idx) => {
           const active = state.cleaningType === type.name;
           return `
             <button class="booking-type-card ${active ? 'active' : ''}" data-cleaning-type="${type.name}">
@@ -1078,7 +1119,7 @@ function renderBookingStep(state) {
     return `
       <h2 class="elea-heading booking-step-question">${t('booking.timeQuestion')}</h2>
       <div class="booking-time-row">
-        ${t('booking.times').map((time) => `
+        ${(Array.isArray(t('booking.times')) ? t('booking.times') : []).map((time) => `
           <button class="booking-time-btn ${state.time === time ? 'active' : ''}" data-time-select="${time}">${time}</button>
         `).join('')}
       </div>
@@ -1104,14 +1145,14 @@ function renderBookingStep(state) {
           <label>${t('booking.street')}</label>
           <select id="booking-street" class="elea-input booking-location-select">
             <option value="">${t('booking.street')}</option>
-            ${t('booking.streetOptions').map((option) => `<option value="${option}" ${state.details.street === option ? 'selected' : ''}>${option}</option>`).join('')}
+            ${(Array.isArray(t('booking.streetOptions')) ? t('booking.streetOptions') : []).map((option) => `<option value="${option}" ${state.details.street === option ? 'selected' : ''}>${option}</option>`).join('')}
           </select>
         </div>
         <div class="booking-detail-field">
           <label>${t('booking.location')}</label>
           <select id="booking-location" class="elea-input booking-location-select">
             <option value="">${t('booking.location')}</option>
-            ${t('booking.locationOptions').map((option) => `<option value="${option}" ${state.details.location === option ? 'selected' : ''}>${option}</option>`).join('')}
+            ${(Array.isArray(t('booking.locationOptions')) ? t('booking.locationOptions') : []).map((option) => `<option value="${option}" ${state.details.location === option ? 'selected' : ''}>${option}</option>`).join('')}
           </select>
         </div>
         <div class="booking-detail-field full">
@@ -1233,12 +1274,210 @@ function generateReference() {
 }
 
 function buildWhatsAppMessage(state) {
-  return `Hello Elea, I would like to confirm my booking request.\nReference: ${state.reference}\nName: ${state.details.fullName}\nServices: ${state.selectedServices.join(', ')}\nRooms: ${state.rooms}\nCleaning Type: ${state.cleaningType}\nDate: ${state.date}\nTime: ${state.time}\nStreet: ${state.details.street || 'Not specified'}\nLocation: ${state.details.location || 'Not specified'}\nAddress: ${state.details.address}\nPhone: ${state.details.phone}\nEmail: ${state.details.email}\nNotes: ${state.details.notes || 'None'}`;
+  return `Hallo Elea, ich möchte eine Reinigungsanfrage senden.\nReferenz: ${state.reference}\nName: ${state.details.fullName}\nLeistungen: ${state.selectedServices.join(', ')}\nRäume: ${state.rooms}\nReinigungsart: ${state.cleaningType}\nDatum: ${state.date}\nUhrzeit: ${state.time}\nStraße: ${state.details.street || 'Nicht angegeben'}\nStadtteil: ${state.details.location || 'Nicht angegeben'}\nAdresse: ${state.details.address || 'Nicht angegeben'}\nTelefon: ${state.details.phone}\nE-Mail: ${state.details.email}\nNotizen: ${state.details.notes || 'Keine'}`;
 }
 
 function buildEmailBody(state) {
-  return `Booking reference: ${state.reference}\nName: ${state.details.fullName}\nServices: ${state.selectedServices.join(', ')}\nRooms: ${state.rooms}\nCleaning Type: ${state.cleaningType}\nDate: ${state.date}\nTime: ${state.time}\nStreet: ${state.details.street || 'Not specified'}\nLocation: ${state.details.location || 'Not specified'}\nAddress: ${state.details.address}\nPhone: ${state.details.phone}\nEmail: ${state.details.email}\nNotes: ${state.details.notes || 'None'}`;
+  return `Buchungsreferenz: ${state.reference}\nName: ${state.details.fullName}\nLeistungen: ${state.selectedServices.join(', ')}\nRäume: ${state.rooms}\nReinigungsart: ${state.cleaningType}\nDatum: ${state.date}\nUhrzeit: ${state.time}\nStraße: ${state.details.street || 'Nicht angegeben'}\nStadtteil: ${state.details.location || 'Nicht angegeben'}\nAdresse: ${state.details.address || 'Nicht angegeben'}\nTelefon: ${state.details.phone}\nE-Mail: ${state.details.email}\nNotizen: ${state.details.notes || 'Keine'}`;
 }
+
+// Updated booking flow overrides. Kept together so every form value has one source of truth.
+function bookingSelect(label, key, options, values) { return `<div class="booking-detail-field"><label for="booking-${key}">${label}</label><select id="booking-${key}" class="elea-input"><option value="">${t('booking.selectOption') || 'Bitte wählen'}</option>${options.map(option => `<option value="${option}" ${values[key] === option ? 'selected' : ''}>${option}</option>`).join('')}</select></div>`; }
+function bookingInput(label, key, values) { return `<div class="booking-detail-field"><label for="booking-${key}">${label}</label><input id="booking-${key}" class="elea-input" type="number" min="0" value="${values[key] || ''}"></div>`; }
+function hasDetailedCleaningService(state) { return state.selectedServices.some(service => /move.?in|move.?out|deep/i.test(service)); }
+function hasPhotoRecommendedService(state) { return state.selectedServices.some(service => /move.?in|move.?out|deep|renovation/i.test(service)); }
+function bookingDetailRows(state) {
+  const labels = { type: 'Objekttyp', size: 'Größe (m²)', bedrooms: 'Schlafzimmer', bathrooms: 'Badezimmer', kitchens: 'Küchen', livingRooms: 'Wohnräume', toilets: 'Separates WC / Gast-WC', balconies: 'Balkone / Terrassen', floors: 'Stockwerke', elevator: 'Fahrstuhl verfügbar', condition: 'Zustand', lastProfessionalCleaning: 'Letzte professionelle Reinigung', furnished: 'Möbliert', empty: 'Derzeit leer', appliances: 'Geräte / Bereiche', otherAppliance: 'Andere Geräte / Bereich', renovationDust: 'Baustaub / Renovierung', photoNames: 'Ausgewählte Dateien' };
+  return Object.entries({ ...state.property, ...state.serviceDetails })
+    .filter(([, value]) => Array.isArray(value) ? value.length : value)
+    .map(([key, value]) => ({ label: labels[key] || key, value: Array.isArray(value) ? value.join(', ') : value }));
+}
+function buildRequestDetails(state) {
+  return [{ label: 'Referenz', value: state.reference }, { label: 'Name', value: state.details.fullName }, { label: 'Leistungen', value: state.selectedServices.join(', ') }, ...bookingDetailRows(state), { label: 'Bevorzugtes Datum', value: state.date }, { label: 'Bevorzugte Uhrzeit', value: state.time }, { label: 'Straße', value: state.details.street }, { label: 'Stadtteil', value: state.details.location }, { label: 'Adresse', value: state.details.address }, { label: 'Telefon', value: state.details.phone }, { label: 'E-Mail', value: state.details.email }, { label: 'Notizen', value: state.details.notes || 'Keine' }].map(row => `${row.label}: ${row.value}`).join('\n');
+}
+function buildWhatsAppMessage(state) {
+  return `Hallo Elea, ich möchte eine Reinigungsanfrage senden.\n\n${buildRequestDetails(state)}${state.serviceDetails.photoNames.length ? `\n\nAusgewählte Dateien: ${state.serviceDetails.photoNames.join(', ')}\nBitte fügen Sie diese Fotos vor dem Senden an.` : ''}`;
+}
+function buildEmailBody(state) {
+  return `Reinigungsanfrage\n\n${buildRequestDetails(state)}${state.serviceDetails.photoNames.length ? `\n\nAusgewählte Dateien: ${state.serviceDetails.photoNames.join(', ')}\nBitte fügen Sie diese Fotos vor dem Senden an.` : ''}`;
+}
+function bindBookingGroup(modal, state, group) { Object.keys(state[group]).filter(key => !['appliances', 'photoNames'].includes(key)).forEach((key) => { const field = modal.querySelector(`#booking-${key}`); if (field) field.addEventListener('change', event => { state[group][key] = event.target.value; }); if (field) field.addEventListener('input', event => { state[group][key] = event.target.value; }); }); }
+
+function renderBookingModal() {
+  const modal = document.getElementById('booking-modal');
+  if (!modal || !modal.bookingState) return;
+  const state = modal.bookingState;
+  const closeButton = '<button class="booking-close" data-booking-close aria-label="Close"><i data-lucide="x"></i></button>';
+  if (state.delivered || state.deliveryChoice) {
+    const completed = state.delivered;
+    modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:100%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">${completed ? t('booking.successTitle') : t('booking.title')}</div>${closeButton}</div></header><div class="elea-container booking-body"><div class="booking-success"><div class="success-icon"><i data-lucide="${completed ? 'check' : 'send'}"></i></div><h2 class="elea-heading">${completed ? t('booking.successTitle') : t('booking.successBody')}</h2><p class="elea-body mt-4">${completed ? t('booking.successBody') : t('booking.deliveryHint') || 'Wählen Sie, wie Sie Ihre Anfrage senden möchten. Die Anfrage wird erst nach dem Senden per WhatsApp oder E-Mail an Elea übermittelt.'}</p><div class="success-reference-box"><div class="eyebrow">${t('booking.referenceLabel') || 'Referenz'}</div><div class="success-reference">${state.reference}</div></div>${completed ? '' : `<div class="success-actions"><button type="button" class="elea-button-primary" data-send-whatsapp><i data-lucide="message-circle"></i> ${t('booking.whatsappBtn') || 'Per WhatsApp senden'}</button><button type="button" class="elea-button-outline" data-send-email><i data-lucide="mail"></i> ${t('booking.emailBtn') || 'Per E-Mail senden'}</button></div>${state.serviceDetails.photoNames.length ? '<p class="elea-body mt-4 booking-photo-note">' + (t('booking.photoNote') || 'Ihre ausgewählten Foto-Dateinamen sind enthalten. Bitte fügen Sie diese vor dem Senden in WhatsApp oder Ihrer E-Mail-App an.') + '</p>' : ''}<button class="success-close" data-booking-review>${t('booking.back') || 'Zurück zur Überprüfung'}</button>`}</div></div>`;
+    lucide.createIcons(); modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal);
+    modal.querySelector('[data-booking-review]')?.addEventListener('click', () => { state.deliveryChoice = false; renderBookingModal(); });
+    modal.querySelector('[data-send-whatsapp]')?.addEventListener('click', () => sendBookingVia(state, 'whatsapp'));
+    modal.querySelector('[data-send-email]')?.addEventListener('click', () => sendBookingVia(state, 'email'));
+    return;
+  }
+  const stepLabels = Array.isArray(t('booking.stepLabels')) ? t('booking.stepLabels') : (Array.isArray(t('booking.steps')) ? t('booking.steps') : ['Service','Property','Details','Schedule','Contact & review']);
+  modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:${((state.step + 1) / stepLabels.length) * 100}%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">${t('booking.title')}</div>${closeButton}</div></header><div class="elea-container booking-body"><div class="booking-step-labels">${stepLabels.map((label, i) => `<span class="${i === state.step ? 'active' : ''}">${label}</span>`).join('')}</div><div class="booking-step-panel">${renderBookingStep(state)}</div><div class="booking-actions"><button class="booking-back ${state.step ? '' : 'disabled'}" ${state.step ? '' : 'disabled'} data-booking-back><i data-lucide="arrow-left"></i> ${t('booking.back') || 'Zurück'}</button><button type="button" class="booking-submit-button" data-booking-next>${state.step === (stepLabels.length-1) ? (t('booking.submit') || 'Buchung anfragen') : (t('booking.next') || 'Weiter')} <i data-lucide="arrow-right"></i></button></div><div class="booking-error ${state.errors.general ? 'show' : ''}">${state.errors.general || ''}</div></div>`;
+  lucide.createIcons(); modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal);
+  modal.querySelector('[data-booking-back]')?.addEventListener('click', () => { state.step--; renderBookingModal(); });
+  modal.querySelector('[data-booking-next]')?.addEventListener('click', () => { syncContactDetails(modal, state); if (validateStep(state)) { if (state.step === 4) submitBookingModal(); else { state.step++; renderBookingModal(); } } });
+  if (state.step === 0) modal.querySelectorAll('[data-service-select]').forEach(button => button.addEventListener('click', () => { const value = button.dataset.serviceSelect; state.selectedServices.includes(value) ? state.selectedServices = state.selectedServices.filter(item => item !== value) : state.selectedServices.push(value); renderBookingModal(); }));
+  if (state.step === 1) bindBookingGroup(modal, state, 'property');
+  if (state.step === 2) { bindBookingGroup(modal, state, 'serviceDetails'); modal.querySelectorAll('[data-appliance]').forEach(input => input.addEventListener('change', () => { state.serviceDetails.appliances = [...modal.querySelectorAll('[data-appliance]:checked')].map(item => item.value); })); modal.querySelector('#booking-photos')?.addEventListener('change', event => { state.serviceDetails.photoNames = [...event.target.files].map(file => file.name); }); }
+  if (state.step === 3) { modal.querySelector('#booking-date')?.addEventListener('input', event => { state.date = event.target.value; }); modal.querySelectorAll('[data-time-select]').forEach(button => button.addEventListener('click', () => { state.time = button.dataset.timeSelect; renderBookingModal(); })); }
+  if (state.step === 4) { const fields = ['fullName', 'street', 'phone', 'email', 'location', 'address', 'notes']; fields.forEach(key => { const field = modal.querySelector(`#booking-${key}`); if (!field) return; const save = () => { state.details[key] = field.value; updateContactSummary(modal, state); }; field.addEventListener('input', save); field.addEventListener('change', save); }); syncContactDetails(modal, state); setTimeout(() => syncContactDetails(modal, state), 150); }
+}
+
+function validateStep(state) {
+  state.errors = {};
+  if (state.step === 0 && !state.selectedServices.length) state.errors.general = t('booking.selectService');
+  if (state.step === 1 && Object.values(state.property).some(value => !value)) state.errors.general = t('booking.completeProperty');
+  if (state.step === 3 && (!state.date || !state.time)) state.errors.general = t('booking.selectDate');
+  if (state.step === 4 && ['fullName', 'street', 'phone', 'email', 'location', 'address'].some(key => !String(state.details[key] || '').trim())) state.errors.general = t('booking.completeContact');
+  return !state.errors.general;
+}
+
+function renderBookingStepCurrent(state) {
+  if (state.step === 0) return `<h2 class="elea-heading booking-step-question">${t('booking.serviceQuestion')}</h2><p class="elea-body booking-step-hint">${t('booking.serviceHint')}</p><div class="booking-service-grid">${serviceData.map(service => `<button class="booking-toggle ${state.selectedServices.includes(service.key) ? 'active' : ''}" data-service-select="${service.key}"><span class="toggle-title">${service.titleKey ? t(service.titleKey) : (service.title || service.key)}</span><span class="toggle-check"><i data-lucide="check"></i></span></button>`).join('')}</div>`;
+  if (state.step === 1) return `<h2 class="elea-heading booking-step-question">Tell us about the property.</h2><p class="elea-body booking-step-hint">These details help us prepare an accurate quote.</p><div class="booking-details-grid">${bookingSelect('Property type', 'type', ['Apartment', 'House', 'Studio', 'Other'], state.property)}${bookingInput('Approximate property size (m²)', 'size', state.property)}${bookingSelect('Number of bedrooms', 'bedrooms', ['0–1', '2', '3', '4', '5+'], state.property)}${bookingSelect('Number of bathrooms', 'bathrooms', ['1', '2', '3', '4+'], state.property)}${bookingSelect('Number of kitchens', 'kitchens', ['1', '2', '3+'], state.property)}${bookingSelect('Number of living rooms', 'livingRooms', ['0', '1', '2+'], state.property)}${bookingSelect('Separate toilets / guest WCs', 'toilets', ['0', '1', '2+'], state.property)}${bookingSelect('Balconies / terraces', 'balconies', ['0', '1', '2+'], state.property)}${bookingSelect('Number of floors', 'floors', ['1', '2', '3+'], state.property)}${bookingSelect('Elevator available', 'elevator', ['Yes', 'No'], state.property)}${bookingSelect('Cleaning condition', 'condition', ['Light / Well maintained', 'Moderate', 'Heavy', 'Very heavy / Requires deep cleaning'], state.property)}${bookingSelect('Last professional cleaning', 'lastProfessionalCleaning', ['Within the last week', '1–4 weeks ago', '1–3 months ago', 'More than 3 months ago', 'Never / Not sure'], state.property)}</div>`;
+  if (state.step === 2) { const detailed = hasDetailedCleaningService(state); const recommended = hasPhotoRecommendedService(state); return `<h2 class="elea-heading booking-step-question">Service details.</h2><p class="elea-body booking-step-hint">${detailed ? 'These service-specific details help us quote accurately.' : 'Only information relevant to your selected service is shown.'}</p>${detailed ? `<div class="booking-details-grid">${bookingSelect('Is the property furnished?', 'furnished', ['Yes', 'No', 'Partially'], state.serviceDetails)}${bookingSelect('Is the property currently empty?', 'empty', ['Yes', 'No'], state.serviceDetails)}${bookingSelect('Visible construction or renovation dust?', 'renovationDust', ['Yes', 'No'], state.serviceDetails)}</div><fieldset class="booking-appliance-list"><legend>Appliances / areas that need cleaning</legend>${['Oven', 'Refrigerator', 'Dishwasher', 'Washing machine', 'Windows / interior window cleaning', 'Balcony / terrace cleaning', 'Other'].map(item => `<label><input type="checkbox" data-appliance value="${item}" ${state.serviceDetails.appliances.includes(item) ? 'checked' : ''}> ${item}</label>`).join('')}</fieldset>` : ''}<div class="booking-detail-field full booking-photo-upload"><label for="booking-photos">Upload photos of the property (optional)</label><p>Photos help us understand the size and condition of the property and provide a more accurate quote.${recommended ? ' They are especially useful for this service.' : ''}</p><input id="booking-photos" class="elea-input" type="file" accept="image/*" multiple><small>${state.serviceDetails.photoNames.length ? `Selected: ${state.serviceDetails.photoNames.join(', ')}` : 'You can select multiple images.'}</small></div>`; }
+  if (state.step === 3) return `<h2 class="elea-heading booking-step-question">When would you like the service?</h2><div class="booking-detail-field"><label for="booking-date">Preferred date</label><input id="booking-date" class="elea-input booking-date-input" type="date" min="${new Date().toISOString().split('T')[0]}" value="${state.date || ''}"></div><p class="elea-eyebrow mt-8">Preferred time</p><div class="booking-time-row mt-4">${(Array.isArray(t('booking.times')) ? t('booking.times') : []).map(time => `<button class="booking-time-btn ${state.time === time ? 'active' : ''}" data-time-select="${time}">${time}</button>`).join('')}</div>`;
+  const contact = [['Full name', 'fullName', 'text'], ['Email', 'email', 'email'], ['Phone', 'phone', 'tel']]; return `<h2 class="elea-heading booking-step-question">Your details and review.</h2><div class="booking-details-grid">${contact.map(([label, key, type]) => `<div class="booking-detail-field"><label>${label}</label><input id="booking-${key}" class="elea-input" type="${type}" value="${state.details[key] || ''}"></div>`).join('')}<div class="booking-detail-field"><label>Street</label><select id="booking-street" class="elea-input"><option value="">Select a street</option>${t('booking.streetOptions').map(option => `<option ${state.details.street === option ? 'selected' : ''}>${option}</option>`).join('')}</select></div><div class="booking-detail-field"><label>Location</label><select id="booking-location" class="elea-input"><option value="">Select a location</option>${t('booking.locationOptions').map(option => `<option ${state.details.location === option ? 'selected' : ''}>${option}</option>`).join('')}</select></div><div class="booking-detail-field full"><label>Address</label><input id="booking-address" class="elea-input" value="${state.details.address || ''}"></div><div class="booking-detail-field full"><label>Additional notes</label><textarea id="booking-notes" class="elea-input">${state.details.notes || ''}</textarea></div></div><h3 class="elea-eyebrow mt-8">Request summary</h3><div class="booking-review-list">${[{ label: 'Services', value: state.selectedServices.join(', ') }, ...bookingDetailRows(state), { label: 'Preferred date', value: state.date }, { label: 'Preferred time', value: state.time }, { label: 'Name', value: state.details.fullName }, { label: 'Phone', value: state.details.phone }, { label: 'Email', value: state.details.email }, { label: 'Address', value: `${state.details.street}, ${state.details.location}, ${state.details.address}` }, { label: 'Notes', value: state.details.notes || 'None' }].map(row => `<div class="booking-review-row"><div class="booking-review-label">${row.label}</div><div class="booking-review-value">${row.value}</div></div>`).join('')}</div>`;
+}
+function submitBookingModal() { const state = document.getElementById('booking-modal')?.bookingState; if (!state || !validateStep(state)) return; state.reference = state.reference || generateReference(); state.deliveryChoice = true; renderBookingModal(); }
+function sendBookingVia(state, channel) { const href = channel === 'whatsapp' ? `https://wa.me/${defaults.whatsappNumber}?text=${encodeURIComponent(buildWhatsAppMessage(state))}` : `mailto:${defaults.email}?subject=${encodeURIComponent(`Elea cleaning request ${state.reference}`)}&body=${encodeURIComponent(buildEmailBody(state))}`; window.open(href, '_blank', 'noopener'); state.deliveryChoice = false; state.delivered = true; renderBookingModal(); }
+
+// Service-aware booking questions. Each customer sees only what is useful for the chosen service.
+function hasDetailedCleaningService(state) {
+  return state.selectedServices.some((service) => ['Move-In', 'Move-Out', 'Deep Cleaning'].includes(service));
+}
+function hasPhotoRecommendedService(state) {
+  return state.selectedServices.some((service) => ['Move-In', 'Move-Out', 'Deep Cleaning', 'After-Renovation'].includes(service));
+}
+function needsApplianceChoices(state) {
+  return hasDetailedCleaningService(state) || state.selectedServices.includes('Oven & Appliance');
+}
+function renderBookingStep(state) {
+  const services = [...serviceData, { key: 'Deep Cleaning', title: 'Deep Cleaning' }];
+  if (state.step === 0) return `
+    <div class="booking-intro"><span class="booking-kicker">01 / ${t('booking.stepShortService') || 'SERVICE'}</span><h2 class="elea-heading booking-step-question">${t('booking.serviceQuestion')}</h2><p class="elea-body booking-step-hint">${t('booking.serviceHint')}</p></div>
+    <div class="booking-service-grid">${services.map(service => `<button class="booking-toggle ${state.selectedServices.includes(service.key) ? 'active' : ''}" data-service-select="${service.key}"><span class="toggle-title">${service.titleKey ? t(service.titleKey) : (service.title || service.key)}</span><span class="toggle-check"><i data-lucide="check"></i></span></button>`).join('')}</div>`;
+  if (state.step === 2) {
+    const detailed = hasDetailedCleaningService(state);
+    const applianceChoices = needsApplianceChoices(state);
+    const photoRecommended = hasPhotoRecommendedService(state);
+    return `
+      <div class="booking-intro"><span class="booking-kicker">03 / DETAILS</span><h2 class="elea-heading booking-step-question">${detailed ? 'A few details for your clean.' : photoRecommended ? 'Help us prepare your quote.' : 'Optional property photos.'}</h2><p class="elea-body booking-step-hint">${detailed ? 'These details help us plan the right team, time and equipment.' : photoRecommended ? 'Photos help us assess the space and provide a more accurate quote.' : 'You can add photos if they would help us understand the space.'}</p></div>
+      ${detailed ? `<section class="booking-section-card"><div class="booking-section-title">Property access</div><div class="booking-details-grid">${bookingSelect('Is the property furnished?', 'furnished', ['Yes', 'No', 'Partially'], state.serviceDetails)}${bookingSelect('Is the property currently empty?', 'empty', ['Yes', 'No'], state.serviceDetails)}</div></section>` : ''}
+      ${applianceChoices ? `<section class="booking-section-card"><div class="booking-section-title">What needs cleaning?</div><fieldset class="booking-appliance-list"><legend>Select all that apply</legend>${['Oven', 'Refrigerator', 'Dishwasher', 'Washing machine', 'Windows / interior window cleaning', 'Balcony / terrace cleaning', 'Other'].map(item => `<label><input type="checkbox" data-appliance value="${item}" ${state.serviceDetails.appliances.includes(item) ? 'checked' : ''}><span>${item}</span></label>`).join('')}</fieldset>${state.serviceDetails.appliances.includes('Other') ? `<div class="booking-detail-field"><label for="booking-otherAppliance">Please specify</label><input id="booking-otherAppliance" class="elea-input" value="${state.serviceDetails.otherAppliance || ''}" placeholder="Tell us what else needs cleaning"></div>` : ''}</section>` : ''}
+      ${detailed || state.selectedServices.includes('After-Renovation') ? `<section class="booking-section-card"><div class="booking-section-title">${detailed ? 'Property condition' : 'Renovation details'}</div><div class="booking-details-grid">${bookingSelect('Visible construction or renovation dust?', 'renovationDust', ['Yes', 'No'], state.serviceDetails)}</div></section>` : ''}
+      <section class="booking-photo-upload"><label for="booking-photos">Upload photos of the property <span>(optional)</span></label><p>${photoRecommended ? 'Photos are especially useful for this service and help us provide a more accurate quote.' : 'Photos can help us understand the property before we prepare your quote.'}</p><input id="booking-photos" class="elea-input" type="file" accept="image/*" multiple><small>${state.serviceDetails.photoNames.length ? `Selected: ${state.serviceDetails.photoNames.join(', ')}` : 'You can select multiple images.'}</small></section>`;
+  }
+  return renderBookingStepCurrent(state);
+}
+
+function bookingDetailRows(state) {
+  const labels = { type: 'Property type', size: 'Property size (m²)', bedrooms: 'Bedrooms', bathrooms: 'Bathrooms', kitchens: 'Kitchens', livingRooms: 'Living rooms', toilets: 'Separate toilets / guest WCs', balconies: 'Balconies / terraces', floors: 'Floors', elevator: 'Elevator available', condition: 'Cleaning condition', lastProfessionalCleaning: 'Last professional cleaning', furnished: 'Property furnished', empty: 'Property currently empty', appliances: 'Appliances / areas to clean', otherAppliance: 'Other appliance / area', renovationDust: 'Construction / renovation dust', photoNames: 'Selected photo files' };
+  return Object.entries({ ...state.property, ...state.serviceDetails }).filter(([, value]) => Array.isArray(value) ? value.length : value).map(([key, value]) => ({ label: labels[key] || key, value: Array.isArray(value) ? value.join(', ') : value }));
+}
+
+function syncContactDetails(modal, state) {
+  if (state.step !== 4) return;
+  ['fullName', 'street', 'phone', 'email', 'location', 'address', 'notes'].forEach((key) => {
+    const field = modal.querySelector(`#booking-${key}`);
+    if (field) state.details[key] = field.value.trim();
+  });
+  updateContactSummary(modal, state);
+}
+
+function updateContactSummary(modal, state) {
+  const summary = {
+    Name: state.details.fullName || '—',
+    Phone: state.details.phone || '—',
+    Email: state.details.email || '—',
+    Address: [state.details.street, state.details.location, state.details.address].filter(Boolean).join(', ') || '—',
+    Notes: state.details.notes || 'None'
+  };
+  summary.Name = state.details.fullName || '—';
+  summary.Telefon = state.details.phone || '—';
+  summary['E-Mail'] = state.details.email || '—';
+  summary.Adresse = [state.details.street, state.details.location, state.details.address].filter(Boolean).join(', ') || '—';
+  summary.Hinweise = state.details.notes || '—';
+  modal.querySelectorAll('.booking-review-row').forEach((row) => {
+    const label = row.querySelector('.booking-review-label')?.textContent.trim();
+    if (!(label in summary)) return;
+    const value = row.querySelector('.booking-review-value');
+    if (value) value.textContent = summary[label];
+  });
+}
+
+function bookingUi() {
+  const de = getLang() === 'de';
+  return de ? {
+    steps: ['Service', 'Immobilie', 'Details', 'Wunschtermin', 'Kontakt & Prüfung'],
+    back: 'Zurück', continue: 'Weiter', send: 'Zu den Sendeoptionen',
+    serviceTitle: 'Wählen Sie Ihre Leistung.', serviceHint: 'Wählen Sie alles aus, worum Elea sich kümmern soll.',
+    propertyTitle: 'Erzählen Sie uns von der Immobilie.', propertyHint: 'Mit diesen Angaben können wir Ihre Anfrage zuverlässig einschätzen.',
+    detailsTitle: 'Ein paar Details für Ihre Reinigung.', detailsHint: 'Wir zeigen nur Fragen, die für Ihre Auswahl relevant sind.',
+    scheduleTitle: 'Wann passt es Ihnen?', contactTitle: 'Ihre Daten & Übersicht.',
+    estimateTitle: 'Ihre Anfrage wird geprüft.', estimateBody: 'Auf Grundlage Ihrer Angaben erstellt Elea eine unverbindliche Kosteneinschätzung. Der endgültige Preis wird nach Prüfung Ihrer Anfrage und bei Bedarf nach einer Besichtigung bestätigt.',
+    paymentTitle: 'Zahlungsbedingungen', paymentBody: 'Vor dem vereinbarten Termin ist eine Anzahlung von 50 % fällig. Die restlichen 50 % werden nach Abschluss der vereinbarten Leistungen fällig.',
+    scopeTitle: 'Leistungsumfang', scopeBody: 'Die finale Bestätigung enthält alle eingeschlossenen Leistungen, Bereiche, Zusatzleistungen, Termin und Preis. Arbeiten außerhalb des vereinbarten Umfangs werden nur mit Ihrer Zustimmung ausgeführt und können zusätzliche Kosten verursachen.',
+    policy: 'Stornierungs- und Umbuchungsbedingungen vor der Anzahlung lesen',
+    readyTitle: 'Ihre Anfrage ist bereit zum Senden.', readyBody: 'Wählen Sie WhatsApp oder E-Mail. Ihre Anfrage wird erst an Elea übermittelt, nachdem Sie sie in der gewählten App abgesendet haben.',
+    whatsapp: 'Anfrage per WhatsApp senden', email: 'Anfrage per E-Mail senden',
+    thanksTitle: 'Vielen Dank. Ihre Anfrage wurde vorbereitet.', thanksBody: 'Bitte schließen Sie das Senden jetzt in WhatsApp oder Ihrer E-Mail-App ab. Elea prüft Ihre Anfrage und meldet sich zeitnah.',
+    consultationTitle: 'Möchten Sie eine unverbindliche Beratung vereinbaren?', consultationBody: 'Für größere oder komplexere Aufträge kann Elea die Anforderungen vor dem endgültigen Angebot gemeinsam mit Ihnen klären.', consultationYes: 'Beratung anfragen', consultationNo: 'Zuerst Angebot erhalten',
+    furnished: 'Ist die Immobilie möbliert?', empty: 'Ist die Immobilie derzeit leer?', dust: 'Sichtbarer Bau- oder Renovierungsstaub?',
+    photo: 'Fotos der Immobilie hochladen', photoHint: 'Optional. Fotos helfen uns, Größe und Zustand besser einzuschätzen und ein genaueres Angebot zu erstellen.', summary: 'Ihre Anfrage im Überblick'
+  } : {
+    steps: ['Service', 'Property', 'Details', 'Schedule', 'Contact & review'], back: 'Back', continue: 'Continue', send: 'Continue to send options',
+    serviceTitle: 'Choose your service.', serviceHint: 'Select everything you would like Elea to take care of.', propertyTitle: 'Tell us about the property.', propertyHint: 'These details help us assess your request accurately.', detailsTitle: 'A few details for your clean.', detailsHint: 'Only questions relevant to your selected service are shown.', scheduleTitle: 'When would you like the service?', contactTitle: 'Your details & review.',
+    estimateTitle: 'Your request will be reviewed.', estimateBody: 'Elea will prepare a non-binding estimate from the information provided. The final price is confirmed after reviewing the request and, where necessary, inspecting the property.', paymentTitle: 'Payment terms', paymentBody: 'A 50% deposit is due before the scheduled service. The remaining 50% is due after the agreed services have been completed.', scopeTitle: 'Scope of work', scopeBody: 'The final confirmation will state included services, areas, additions, date, time and price. Work outside the agreed scope is completed only with your approval and may incur additional charges.', policy: 'Read the cancellation and rescheduling policy before paying the deposit',
+    readyTitle: 'Your request is ready to be submitted.', readyBody: 'Choose WhatsApp or Email. Your request is sent to Elea only after you complete sending it in the chosen app.', whatsapp: 'Send request via WhatsApp', email: 'Send request via Email', thanksTitle: 'Thank you. Your request has been prepared.', thanksBody: 'Please finish sending it in WhatsApp or your email app. Elea will review your request and contact you shortly.', consultationTitle: 'Would you like to arrange an optional consultation?', consultationBody: 'For larger or more complex work, Elea can discuss the requirements with you before providing the final quote.', consultationYes: 'Request a consultation', consultationNo: 'Receive quote first', furnished: 'Is the property furnished?', empty: 'Is the property currently empty?', dust: 'Visible construction or renovation dust?', photo: 'Upload property photos', photoHint: 'Optional. Photos help us understand the property and provide a more accurate quote.', summary: 'Request summary'
+  };
+}
+
+function renderBookingModal() {
+  const modal = document.getElementById('booking-modal'); if (!modal || !modal.bookingState) return;
+  const state = modal.bookingState; const c = bookingUi(); const close = '<button class="booking-close" data-booking-close aria-label="Close"><i data-lucide="x"></i></button>';
+  if (state.delivered) {
+    modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:100%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">ELEA</div>${close}</div></header><div class="elea-container booking-body"><div class="booking-success"><div class="success-icon"><i data-lucide="check"></i></div><h2 class="elea-heading">${c.thanksTitle}</h2><p class="elea-body mt-4">${c.thanksBody}</p><div class="success-reference-box"><div class="eyebrow">Reference</div><div class="success-reference">${state.reference}</div></div><div class="booking-consultation"><h3>${c.consultationTitle}</h3><p>${c.consultationBody}</p><div class="success-actions"><button class="elea-button-primary" data-consultation><i data-lucide="calendar"></i> ${c.consultationYes}</button><button class="success-close" data-booking-close>${c.consultationNo}</button></div></div></div></div>`;
+    lucide.createIcons(); modal.querySelectorAll('[data-booking-close]').forEach(button => button.addEventListener('click', closeBookingModal)); modal.querySelector('[data-consultation]')?.addEventListener('click', () => requestConsultation(state)); return;
+  }
+  if (state.estimateReview) {
+    modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:100%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">ELEA</div>${close}</div></header><div class="elea-container booking-body"><div class="booking-estimate-panel"><span class="booking-kicker">NEXT STEP</span><h2 class="elea-heading">${c.estimateTitle}</h2><p class="elea-body">${c.estimateBody}</p><div class="booking-policy-grid"><section><h3>${c.paymentTitle}</h3><p>${c.paymentBody}</p></section><section><h3>${c.scopeTitle}</h3><p>${c.scopeBody}</p></section></div><a class="booking-policy-link" href="cancellation.html" target="_blank" rel="noreferrer"><i data-lucide="external-link"></i> ${c.policy}</a><div class="booking-actions"><button class="booking-back" data-estimate-back><i data-lucide="arrow-left"></i> ${c.back}</button><button class="booking-submit-button" data-estimate-send>${c.send} <i data-lucide="arrow-right"></i></button></div></div></div>`;
+    lucide.createIcons(); modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal); modal.querySelector('[data-estimate-back]')?.addEventListener('click', () => { state.estimateReview = false; renderBookingModal(); }); modal.querySelector('[data-estimate-send]')?.addEventListener('click', () => { state.deliveryChoice = true; state.estimateReview = false; renderBookingModal(); }); return;
+  }
+  if (state.deliveryChoice) {
+    modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:100%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">ELEA</div>${close}</div></header><div class="elea-container booking-body"><div class="booking-success"><div class="success-icon"><i data-lucide="send"></i></div><h2 class="elea-heading">${c.readyTitle}</h2><p class="elea-body mt-4">${c.readyBody}</p><div class="success-reference-box"><div class="eyebrow">Reference</div><div class="success-reference">${state.reference}</div></div><div class="success-actions"><button class="elea-button-primary" data-send-whatsapp><i data-lucide="message-circle"></i> ${c.whatsapp}</button><button class="elea-button-outline" data-send-email><i data-lucide="mail"></i> ${c.email}</button></div>${state.serviceDetails.photoNames.length ? '<p class="elea-body mt-4 booking-photo-note">Please attach the selected photos in WhatsApp or your email app before sending.</p>' : ''}</div></div>`;
+    lucide.createIcons(); modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal); modal.querySelector('[data-send-whatsapp]')?.addEventListener('click', () => sendBookingVia(state, 'whatsapp')); modal.querySelector('[data-send-email]')?.addEventListener('click', () => sendBookingVia(state, 'email')); return;
+  }
+  modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:${((state.step + 1) / 5) * 100}%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">${t('booking.title')}</div>${close}</div></header><div class="elea-container booking-body"><div class="booking-step-labels">${c.steps.map((label, index) => `<span class="${index === state.step ? 'active' : ''}">${String(index + 1).padStart(2, '0')} ${label}</span>`).join('')}</div><div class="booking-step-panel">${renderBookingStep(state)}</div><div class="booking-actions"><button class="booking-back ${state.step ? '' : 'disabled'}" ${state.step ? '' : 'disabled'} data-booking-back><i data-lucide="arrow-left"></i> ${c.back}</button><button type="button" class="booking-submit-button" data-booking-next>${state.step === 4 ? c.send : c.continue} <i data-lucide="arrow-right"></i></button></div><div class="booking-error ${state.errors.general ? 'show' : ''}">${state.errors.general || ''}</div></div>`;
+  lucide.createIcons(); modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal); modal.querySelector('[data-booking-back]')?.addEventListener('click', () => { state.step--; renderBookingModal(); }); modal.querySelector('[data-booking-next]')?.addEventListener('click', () => { syncContactDetails(modal, state); if (!validateStep(state)) { renderBookingModal(); return; } if (state.step === 4) { submitBookingModal(); } else { state.step++; renderBookingModal(); } });
+  bindBookingStepEvents(modal, state);
+}
+
+function bindBookingStepEvents(modal, state) {
+  if (state.step === 0) modal.querySelectorAll('[data-service-select]').forEach(button => button.addEventListener('click', () => { const key = button.dataset.serviceSelect; state.selectedServices = state.selectedServices.includes(key) ? state.selectedServices.filter(item => item !== key) : [...state.selectedServices, key]; renderBookingModal(); }));
+  if (state.step === 1) bindBookingGroup(modal, state, 'property');
+  if (state.step === 2) { bindBookingGroup(modal, state, 'serviceDetails'); modal.querySelectorAll('[data-appliance]').forEach(input => input.addEventListener('change', () => { state.serviceDetails.appliances = [...modal.querySelectorAll('[data-appliance]:checked')].map(item => item.value); renderBookingModal(); })); modal.querySelector('#booking-photos')?.addEventListener('change', event => { state.serviceDetails.photoNames = [...event.target.files].map(file => file.name); }); }
+  if (state.step === 3) { modal.querySelector('#booking-date')?.addEventListener('input', event => { state.date = event.target.value; }); modal.querySelectorAll('[data-time-select]').forEach(button => button.addEventListener('click', () => { state.time = button.dataset.timeSelect; renderBookingModal(); })); }
+  if (state.step === 4) { ['fullName', 'street', 'phone', 'email', 'location', 'address', 'notes'].forEach(key => { const field = modal.querySelector(`#booking-${key}`); if (!field) return; const save = () => { state.details[key] = field.value; updateContactSummary(modal, state); }; field.addEventListener('input', save); field.addEventListener('change', save); }); setTimeout(() => syncContactDetails(modal, state), 150); }
+}
+
+function renderBookingStep(state) {
+  const c = bookingUi(); const de = getLang() === 'de'; const yesNo = de ? ['Ja', 'Nein'] : ['Yes', 'No']; const services = [...serviceData, { key: 'Deep Cleaning', title: de ? 'Grundreinigung' : 'Deep Cleaning' }];
+  if (state.step === 0) return `<div class="booking-intro"><span class="booking-kicker">01 / ${c.steps[0]}</span><h2 class="elea-heading booking-step-question">${c.serviceTitle}</h2><p class="elea-body booking-step-hint">${c.serviceHint}</p></div><div class="booking-service-grid">${services.map(service => `<button class="booking-toggle ${state.selectedServices.includes(service.key) ? 'active' : ''}" data-service-select="${service.key}"><span class="toggle-title">${service.titleKey ? t(service.titleKey) : (service.title || service.key)}</span><span class="toggle-check"><i data-lucide="check"></i></span></button>`).join('')}</div>`;
+  if (state.step === 1) return `<div class="booking-intro"><span class="booking-kicker">02 / ${c.steps[1]}</span><h2 class="elea-heading booking-step-question">${c.propertyTitle}</h2><p class="elea-body booking-step-hint">${c.propertyHint}</p></div><div class="booking-details-grid">${bookingSelect(de ? 'Immobilientyp' : 'Property type', 'type', de ? ['Wohnung', 'Haus', 'Studio', 'Andere'] : ['Apartment', 'House', 'Studio', 'Other'], state.property)}${bookingInput(de ? 'Ungefähre Größe (m²)' : 'Approximate property size (m²)', 'size', state.property)}${bookingSelect(de ? 'Schlafzimmer' : 'Bedrooms', ['bedrooms'][0], ['0–1', '2', '3', '4', '5+'], state.property)}${bookingSelect(de ? 'Badezimmer' : 'Bathrooms', 'bathrooms', ['1', '2', '3', '4+'], state.property)}${bookingSelect(de ? 'Küchen' : 'Kitchens', 'kitchens', ['1', '2', '3+'], state.property)}${bookingSelect(de ? 'Wohnzimmer' : 'Living rooms', 'livingRooms', ['0', '1', '2+'], state.property)}${bookingSelect(de ? 'Separate WCs / Gäste-WCs' : 'Separate toilets / guest WCs', 'toilets', ['0', '1', '2+'], state.property)}${bookingSelect(de ? 'Balkone / Terrassen' : 'Balconies / terraces', 'balconies', ['0', '1', '2+'], state.property)}${bookingSelect(de ? 'Etagen' : 'Floors', 'floors', ['1', '2', '3+'], state.property)}${bookingSelect(de ? 'Aufzug vorhanden' : 'Elevator available', 'elevator', yesNo, state.property)}${bookingSelect(de ? 'Reinigungszustand' : 'Cleaning condition', 'condition', de ? ['Leicht / gepflegt', 'Mittel', 'Stark', 'Sehr stark / Grundreinigung erforderlich'] : ['Light / Well maintained', 'Moderate', 'Heavy', 'Very heavy / Requires deep cleaning'], state.property)}${bookingSelect(de ? 'Letzte professionelle Reinigung' : 'Last professional cleaning', 'lastProfessionalCleaning', de ? ['Innerhalb der letzten Woche', 'Vor 1–4 Wochen', 'Vor 1–3 Monaten', 'Vor mehr als 3 Monaten', 'Nie / nicht sicher'] : ['Within the last week', '1–4 weeks ago', '1–3 months ago', 'More than 3 months ago', 'Never / Not sure'], state.property)}</div>`;
+  if (state.step === 2) { const detailed = hasDetailedCleaningService(state); const appliances = needsApplianceChoices(state); const renovation = detailed || state.selectedServices.includes('After-Renovation'); return `<div class="booking-intro"><span class="booking-kicker">03 / ${c.steps[2]}</span><h2 class="elea-heading booking-step-question">${c.detailsTitle}</h2><p class="elea-body booking-step-hint">${c.detailsHint}</p></div>${detailed ? `<section class="booking-section-card"><div class="booking-section-title">${de ? 'Immobilie' : 'Property'}</div><div class="booking-details-grid">${bookingSelect(c.furnished, 'furnished', de ? ['Ja', 'Nein', 'Teilweise'] : ['Yes', 'No', 'Partially'], state.serviceDetails)}${bookingSelect(c.empty, 'empty', yesNo, state.serviceDetails)}</div></section>` : ''}${appliances ? `<section class="booking-section-card"><div class="booking-section-title">${de ? 'Was soll gereinigt werden?' : 'What needs cleaning?'}</div><fieldset class="booking-appliance-list"><legend>${de ? 'Alles Zutreffende auswählen' : 'Select all that apply'}</legend>${['Oven', 'Refrigerator', 'Dishwasher', 'Washing machine', 'Windows / interior window cleaning', 'Balcony / terrace cleaning', 'Other'].map(item => `<label><input type="checkbox" data-appliance value="${item}" ${state.serviceDetails.appliances.includes(item) ? 'checked' : ''}><span>${item}</span></label>`).join('')}</fieldset>${state.serviceDetails.appliances.includes('Other') ? `<div class="booking-detail-field"><label>${de ? 'Bitte beschreiben' : 'Please specify'}</label><input id="booking-otherAppliance" class="elea-input" value="${state.serviceDetails.otherAppliance || ''}"></div>` : ''}</section>` : ''}${renovation ? `<section class="booking-section-card"><div class="booking-section-title">${de ? 'Zustand' : 'Condition'}</div><div class="booking-details-grid">${bookingSelect(c.dust, 'renovationDust', yesNo, state.serviceDetails)}</div></section>` : ''}<section class="booking-photo-upload"><label for="booking-photos">${c.photo} <span>(${de ? 'optional' : 'optional'})</span></label><p>${c.photoHint}</p><input id="booking-photos" class="elea-input" type="file" accept="image/*" multiple><small>${state.serviceDetails.photoNames.length ? state.serviceDetails.photoNames.join(', ') : (de ? 'Mehrere Bilder möglich.' : 'You can select multiple images.')}</small></section>`; }
+  if (state.step === 3) return `<div class="booking-intro"><span class="booking-kicker">04 / ${c.steps[3]}</span><h2 class="elea-heading booking-step-question">${c.scheduleTitle}</h2></div><div class="booking-detail-field"><label>${de ? 'Wunschdatum' : 'Preferred date'}</label><input id="booking-date" class="elea-input booking-date-input" type="date" min="${new Date().toISOString().split('T')[0]}" value="${state.date || ''}"></div><p class="elea-eyebrow mt-8">${de ? 'Wunschzeit' : 'Preferred time'}</p><div class="booking-time-row mt-4">${t('booking.times').map(time => `<button class="booking-time-btn ${state.time === time ? 'active' : ''}" data-time-select="${time}">${time}</button>`).join('')}</div>`;
+  const contact = [[de ? 'Vollständiger Name' : 'Full name', 'fullName', 'text'], ['E-Mail', 'email', 'email'], [de ? 'Telefon' : 'Phone', 'phone', 'tel']]; return `<div class="booking-intro"><span class="booking-kicker">05 / ${c.steps[4]}</span><h2 class="elea-heading booking-step-question">${c.contactTitle}</h2></div><div class="booking-details-grid">${contact.map(([label, key, type]) => `<div class="booking-detail-field"><label>${label}</label><input id="booking-${key}" class="elea-input" type="${type}" value="${state.details[key] || ''}"></div>`).join('')}<div class="booking-detail-field"><label>${de ? 'Straße' : 'Street'}</label><select id="booking-street" class="elea-input"><option value="">${de ? 'Straße auswählen' : 'Select a street'}</option>${t('booking.streetOptions').map(option => `<option ${state.details.street === option ? 'selected' : ''}>${option}</option>`).join('')}</select></div><div class="booking-detail-field"><label>${de ? 'Stadtteil' : 'Location'}</label><select id="booking-location" class="elea-input"><option value="">${de ? 'Stadtteil auswählen' : 'Select a location'}</option>${t('booking.locationOptions').map(option => `<option ${state.details.location === option ? 'selected' : ''}>${option}</option>`).join('')}</select></div><div class="booking-detail-field full"><label>${de ? 'Adresse / Hausnummer' : 'Address'}</label><input id="booking-address" class="elea-input" value="${state.details.address || ''}"></div><div class="booking-detail-field full"><label>${de ? 'Zusätzliche Hinweise' : 'Additional notes'}</label><textarea id="booking-notes" class="elea-input">${state.details.notes || ''}</textarea></div></div><h3 class="elea-eyebrow mt-8">${c.summary}</h3><div class="booking-review-list">${[{label: de ? 'Leistungen' : 'Services', value: state.selectedServices.join(', ')}, ...bookingDetailRows(state), {label: de ? 'Wunschdatum' : 'Preferred date', value: state.date}, {label: de ? 'Wunschzeit' : 'Preferred time', value: state.time}, {label: de ? 'Name' : 'Name', value: state.details.fullName || '—'}, {label: de ? 'Telefon' : 'Phone', value: state.details.phone || '—'}, {label: 'E-Mail', value: state.details.email || '—'}, {label: de ? 'Adresse' : 'Address', value: [state.details.street, state.details.location, state.details.address].filter(Boolean).join(', ') || '—'}, {label: de ? 'Hinweise' : 'Notes', value: state.details.notes || '—'}].map(row => `<div class="booking-review-row"><div class="booking-review-label">${row.label}</div><div class="booking-review-value">${row.value}</div></div>`).join('')}</div>`;
+}
+
+function submitBookingModal() { const state = document.getElementById('booking-modal')?.bookingState; if (!state || !validateStep(state)) return; state.reference = state.reference || generateReference(); state.estimateReview = true; renderBookingModal(); }
+function requestConsultation(state) { const de = getLang() === 'de'; const message = de ? `Hallo Elea, ich möchte gerne eine unverbindliche Beratung zu meiner Anfrage ${state.reference} vereinbaren.` : `Hello Elea, I would like to arrange an optional consultation for request ${state.reference}.`; window.open(`https://wa.me/${defaults.whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank', 'noopener'); }
 
 function initFloatingWhatsApp() {
   const button = document.querySelector('.whatsapp-float');
@@ -1729,9 +1968,10 @@ function initFooterYear() {
 }
 document.addEventListener('DOMContentLoaded', () => {
   applyAdminSiteValues();
+  // Force German as the primary site language on initial load
+  setLang('de');
   renderHomepageContent();
   applyTranslations();
-  setLang(getLang());
   initNavbar();
   initReveal();
   initServiceButtons();
@@ -1741,11 +1981,167 @@ document.addEventListener('DOMContentLoaded', () => {
   initAdminPage();
   initAdminCalendar();
   initAdminBookings();
+  // Promotions helpers
+  try { initializeLaunchPromo(); renderBuiltInPromoCards(); bindPromotionsPage(); } catch (e) { /* non-fatal */ }
   initBerlinNotice();
   initFooterYear();
   normalizeWhatsAppLinks();
+  // Ensure remaining literal English text on the page is replaced with German equivalents
+  try { replaceInlineStrings(); } catch (e) { /* non-fatal */ }
   if (window.lucide) lucide.createIcons();
 });
+
+// Replace common inline English phrases that are not driven by data-i18n
+function replaceInlineStrings() {
+  const map = {
+    'English': 'Englisch',
+    'Home Cleaning': 'Hausreinigung',
+    'Move-In': 'Einzug',
+    'Move-Out': 'Auszug',
+    'After-Renovation': 'Nach der Renovierung',
+    'Oven & Appliance': 'Ofen & Geräte',
+    'Scheduled Laundry': 'Geplante Wäsche',
+    'Window Cleaning': 'Fensterreinigung',
+    'Home Organization': 'Hausorganisation',
+    'Book Now': 'Jetzt buchen',
+    'Book a Service': 'Service buchen',
+    'Request prepared': 'Anfrage vorbereitet',
+    'Submit request': 'Anfrage senden',
+    'Continue to send options': 'Weiter zu Sendeoptionen',
+    'Continue': 'Weiter',
+    'Back': 'Zurück',
+    'Select an option': 'Bitte wählen',
+    'Select a street': 'Straße wählen',
+    'Select a location': 'Ort wählen',
+    'Select a service': 'Leistung wählen',
+    'Choose one or more services.': 'Wählen Sie eine oder mehrere Leistungen.',
+    'Choose your service.': 'Wählen Sie Ihre Leistung.'
+  };
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+  const nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+  nodes.forEach((node) => {
+    if (!node || !node.nodeValue) return;
+    let text = node.nodeValue;
+    Object.keys(map).forEach((k) => {
+      if (text.includes(k)) text = text.split(k).join(map[k]);
+    });
+    if (text !== node.nodeValue) node.nodeValue = text;
+  });
+}
+
+// --- Promotions & Referral client-side utilities ---
+function initializeLaunchPromo() {
+  try {
+    const key = 'elea-launch-start';
+    let start = localStorage.getItem(key);
+    if (!start) {
+      start = new Date().toISOString();
+      localStorage.setItem(key, start);
+    }
+    return new Date(start);
+  } catch (e) {
+    return new Date();
+  }
+}
+
+function isLaunchPromoActive() {
+  try {
+    const start = initializeLaunchPromo();
+    const expiry = new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
+    return new Date() <= expiry;
+  } catch (e) { return false; }
+}
+
+function generateReferralCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = 'REF-';
+  for (let i = 0; i < 5; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+function createReferral(referrerEmail) {
+  if (!referrerEmail || !referrerEmail.includes('@')) return null;
+  const key = 'elea-referrals';
+  let map = {};
+  try { map = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { map = {}; }
+  const code = generateReferralCode();
+  map[code] = { email: referrerEmail.trim().toLowerCase(), created: new Date().toISOString(), used: [] };
+  localStorage.setItem(key, JSON.stringify(map));
+  return code;
+}
+
+function redeemReferral(code, referredEmail) {
+  if (!code) return { success: false, message: 'Invalid code' };
+  const key = 'elea-referrals';
+  let map = {};
+  try { map = JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { map = {}; }
+  const entry = map[code];
+  if (!entry) return { success: false, message: 'Referral code not found' };
+  const normalized = String(referredEmail || '').trim().toLowerCase();
+  if (!normalized || !normalized.includes('@')) return { success: false, message: 'Please provide a valid email' };
+  // record the referral claim — final validation occurs when a booking is completed
+  entry.used = entry.used || [];
+  if (entry.used.includes(normalized)) return { success: false, message: 'This email has already used that referral code' };
+  entry.used.push(normalized);
+  map[code] = entry;
+  localStorage.setItem(key, JSON.stringify(map));
+  // also record a quick claim map for admin convenience
+  try {
+    const admin = getAdminState();
+    admin.referrals = admin.referrals || [];
+    admin.referrals.unshift({ code, referrer: entry.email, referred: normalized, created: new Date().toISOString(), validated: false });
+    saveAdminState(admin);
+  } catch (e) { /* non-fatal */ }
+  return { success: true, message: 'Referral saved locally. Discount applies after the referred booking is completed.' };
+}
+
+function renderBuiltInPromoCards() {
+  const promoTarget = document.getElementById('promo-cards');
+  if (!promoTarget) return;
+  // if the admin supplied CTAs exist, leave them alone
+  if (promoTarget.children.length && !/No active promotions/.test(promoTarget.textContent)) return;
+  const cards = [
+    { title: 'WELCOME OFFER — 50% OFF YOUR FIRST SERVICE', text: 'Limited-time launch offer for new customers. Applies to eligible Elea services only.', link: 'promotions.html#launch' },
+    { title: 'REFER A FRIEND — 50% OFF', text: 'Recommend Elea. When your friend completes their first paid service, you receive 50% off your next eligible service.', link: 'promotions.html#referral' },
+    { title: 'LONG-TERM PARTNERSHIP — 25% OFF (6 months)', text: 'Commit to 12 months and receive 25% off your regular service rate for the first six months.', link: 'promotions.html#partnership' }
+  ];
+  promoTarget.innerHTML = cards.map(c => `
+    <article class="promo-card">
+      <div class="promo-card-body">
+        <h3>${escapeHtml(c.title)}</h3>
+        <p class="elea-body">${escapeHtml(c.text)}</p>
+        <div class="mt-4"><a class="elea-button-outline" href="${escapeHtml(c.link)}">Learn more</a></div>
+      </div>
+    </article>
+  `).join('');
+}
+
+// Hook referral UI when the promotions page is present
+function bindPromotionsPage() {
+  const createForm = document.getElementById('create-referral-form');
+  const redeemForm = document.getElementById('redeem-referral-form');
+  if (createForm) {
+    createForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('referrer-email').value;
+      const result = createReferral(email);
+      const node = document.getElementById('create-referral-result');
+      if (!result) node.textContent = 'Please enter a valid email.';
+      else node.innerHTML = `Referral code created: <strong>${result}</strong>. Share this code with friends. The reward is applied when a referred friend completes a paid booking.`;
+    });
+  }
+  if (redeemForm) {
+    redeemForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = document.getElementById('referral-code-input').value.trim().toUpperCase();
+      const email = document.getElementById('referred-email').value.trim();
+      const out = redeemReferral(code, email);
+      const node = document.getElementById('redeem-referral-result');
+      node.textContent = out.message || '';
+    });
+  }
+}
 
 function initBerlinNotice() {
   // site-wide small notice that the service currently covers Berlin only
