@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 const translations = {
   en: {
-    nav: { home: 'Home', about: 'About', services: 'Services', transformations: 'Transformations', reviews: 'Reviews', contact: 'Contact', book: 'Book Now' },
+    nav: { home: 'Home', about: 'About', services: 'Services', promotions: 'Benefits', transformations: 'Transformations', reviews: 'Reviews', contact: 'Contact', book: 'Book Now' },
     hero: { eyebrow: 'CLEANING & HOME ORGANIZATION', headline: 'A cleaner home. A calmer life.', body: 'Premium cleaning and home organization services designed to make your Berlin home feel fresh, beautiful and effortlessly organized.', cta1: 'Book a Service', cta2: 'WhatsApp Us', manifesto: 'Your home, beautifully cared for.' },
     reasons: {
       eyebrow: 'Why Elea', heading: 'A higher standard of care.', body: 'Elea was founded on the belief that a clean, organized home is the foundation of a calmer life. Every visit is approached with meticulous attention, respect for your space, and a commitment to detail that goes beyond the expected.',
@@ -289,7 +289,7 @@ const translations = {
     common: { continue: 'Continue', back: 'Back', save: 'Save', close: 'Close' }
   },
   de: {
-    nav: { home: 'Startseite', about: 'Über uns', services: 'Leistungen', transformations: 'Verwandlungen', reviews: 'Bewertungen', contact: 'Kontakt', book: 'Jetzt buchen' },
+    nav: { home: 'Startseite', about: 'Über uns', services: 'Leistungen', promotions: 'Vorteile', transformations: 'Verwandlungen', reviews: 'Bewertungen', contact: 'Kontakt', book: 'Jetzt buchen' },
     hero: { eyebrow: 'REINIGUNG & HAUSORGANISATION', headline: 'Ein sauberer Ort. Ein ruhigeres Leben.', body: 'Premium-Reinigungs- und Hausorganisationsdienste, die Ihr Berliner Zuhause frisch, schön und mühelos organisiert wirken lassen.', cta1: 'Service buchen', cta2: 'WhatsApp schreiben', manifesto: 'Ihr Zuhause, liebevoll betreut.' },
     reasons: {
       eyebrow: 'Warum Elea', heading: 'Ein höherer Standard an Pflege.', body: 'Elea wurde aus der Überzeugung gegründet, dass ein sauberes, organisiertes Zuhause die Grundlage eines ruhigeren Lebens ist. Jeder Besuch erfolgt mit sorgfältiger Aufmerksamkeit, Respekt vor Ihrem Raum und einem Engagement für Details, das über das Erwartete hinausgeht.',
@@ -1273,12 +1273,58 @@ function generateReference() {
   return out;
 }
 
+// Build a plain-English request details block for delivery channels so the
+// message Elea receives is always in English regardless of site language.
+function buildRequestDetailsEnglish(state) {
+  const labels = {
+    type: 'Property type',
+    size: 'Size (m²)',
+    bedrooms: 'Bedrooms',
+    bathrooms: 'Bathrooms',
+    kitchens: 'Kitchens',
+    livingRooms: 'Living rooms',
+    toilets: 'Separate WC / Guest WC',
+    balconies: 'Balconies / Terraces',
+    floors: 'Floors',
+    elevator: 'Elevator available',
+    condition: 'Condition',
+    lastProfessionalCleaning: 'Last professional cleaning',
+    furnished: 'Furnished',
+    empty: 'Currently empty',
+    appliances: 'Appliances / areas',
+    otherAppliance: 'Other appliance / area',
+    renovationDust: 'Renovation dust',
+    photoNames: 'Selected files'
+  };
+
+  const detailRows = Object.entries({ ...(state.property || {}), ...(state.serviceDetails || {}) })
+    .filter(([, value]) => Array.isArray(value) ? value.length : value)
+    .map(([key, value]) => ({ label: labels[key] || key, value: Array.isArray(value) ? value.join(', ') : value }));
+
+  const rows = [
+    { label: 'Reference', value: state.reference },
+    { label: 'Name', value: state.details.fullName },
+    { label: 'Services', value: state.selectedServices.join(', ') },
+    ...detailRows,
+    { label: 'Preferred date', value: state.date },
+    { label: 'Preferred time', value: state.time },
+    { label: 'Street', value: state.details.street || 'Not provided' },
+    { label: 'Location', value: state.details.location || 'Not provided' },
+    { label: 'Address', value: state.details.address || 'Not provided' },
+    { label: 'Phone', value: state.details.phone },
+    { label: 'Email', value: state.details.email },
+    { label: 'Notes', value: state.details.notes || 'None' }
+  ];
+
+  return rows.map(r => `${r.label}: ${r.value}`).join('\n');
+}
+
 function buildWhatsAppMessage(state) {
-  return `Hallo Elea, ich möchte eine Reinigungsanfrage senden.\nReferenz: ${state.reference}\nName: ${state.details.fullName}\nLeistungen: ${state.selectedServices.join(', ')}\nRäume: ${state.rooms}\nReinigungsart: ${state.cleaningType}\nDatum: ${state.date}\nUhrzeit: ${state.time}\nStraße: ${state.details.street || 'Nicht angegeben'}\nStadtteil: ${state.details.location || 'Nicht angegeben'}\nAdresse: ${state.details.address || 'Nicht angegeben'}\nTelefon: ${state.details.phone}\nE-Mail: ${state.details.email}\nNotizen: ${state.details.notes || 'Keine'}`;
+  return `Hello Elea, I would like to submit a cleaning request.\n\n${buildRequestDetailsEnglish(state)}${(state.serviceDetails && state.serviceDetails.photoNames && state.serviceDetails.photoNames.length) ? `\n\nSelected files: ${state.serviceDetails.photoNames.join(', ')}\nPlease attach these photos before sending.` : ''}`;
 }
 
 function buildEmailBody(state) {
-  return `Buchungsreferenz: ${state.reference}\nName: ${state.details.fullName}\nLeistungen: ${state.selectedServices.join(', ')}\nRäume: ${state.rooms}\nReinigungsart: ${state.cleaningType}\nDatum: ${state.date}\nUhrzeit: ${state.time}\nStraße: ${state.details.street || 'Nicht angegeben'}\nStadtteil: ${state.details.location || 'Nicht angegeben'}\nAdresse: ${state.details.address || 'Nicht angegeben'}\nTelefon: ${state.details.phone}\nE-Mail: ${state.details.email}\nNotizen: ${state.details.notes || 'Keine'}`;
+  return `Cleaning request\n\n${buildRequestDetailsEnglish(state)}${(state.serviceDetails && state.serviceDetails.photoNames && state.serviceDetails.photoNames.length) ? `\n\nSelected files: ${state.serviceDetails.photoNames.join(', ')}\nPlease attach these photos before sending.` : ''}`;
 }
 
 // Updated booking flow overrides. Kept together so every form value has one source of truth.
@@ -1294,12 +1340,6 @@ function bookingDetailRows(state) {
 }
 function buildRequestDetails(state) {
   return [{ label: 'Referenz', value: state.reference }, { label: 'Name', value: state.details.fullName }, { label: 'Leistungen', value: state.selectedServices.join(', ') }, ...bookingDetailRows(state), { label: 'Bevorzugtes Datum', value: state.date }, { label: 'Bevorzugte Uhrzeit', value: state.time }, { label: 'Straße', value: state.details.street }, { label: 'Stadtteil', value: state.details.location }, { label: 'Adresse', value: state.details.address }, { label: 'Telefon', value: state.details.phone }, { label: 'E-Mail', value: state.details.email }, { label: 'Notizen', value: state.details.notes || 'Keine' }].map(row => `${row.label}: ${row.value}`).join('\n');
-}
-function buildWhatsAppMessage(state) {
-  return `Hallo Elea, ich möchte eine Reinigungsanfrage senden.\n\n${buildRequestDetails(state)}${state.serviceDetails.photoNames.length ? `\n\nAusgewählte Dateien: ${state.serviceDetails.photoNames.join(', ')}\nBitte fügen Sie diese Fotos vor dem Senden an.` : ''}`;
-}
-function buildEmailBody(state) {
-  return `Reinigungsanfrage\n\n${buildRequestDetails(state)}${state.serviceDetails.photoNames.length ? `\n\nAusgewählte Dateien: ${state.serviceDetails.photoNames.join(', ')}\nBitte fügen Sie diese Fotos vor dem Senden an.` : ''}`;
 }
 function bindBookingGroup(modal, state, group) { Object.keys(state[group]).filter(key => !['appliances', 'photoNames'].includes(key)).forEach((key) => { const field = modal.querySelector(`#booking-${key}`); if (field) field.addEventListener('change', event => { state[group][key] = event.target.value; }); if (field) field.addEventListener('input', event => { state[group][key] = event.target.value; }); }); }
 
@@ -1478,6 +1518,60 @@ function renderBookingStep(state) {
 
 function submitBookingModal() { const state = document.getElementById('booking-modal')?.bookingState; if (!state || !validateStep(state)) return; state.reference = state.reference || generateReference(); state.estimateReview = true; renderBookingModal(); }
 function requestConsultation(state) { const de = getLang() === 'de'; const message = de ? `Hallo Elea, ich möchte gerne eine unverbindliche Beratung zu meiner Anfrage ${state.reference} vereinbaren.` : `Hello Elea, I would like to arrange an optional consultation for request ${state.reference}.`; window.open(`https://wa.me/${defaults.whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank', 'noopener'); }
+
+function arrangeConsultationViaWhatsApp() {
+  const de = getLang() === 'de';
+  const message = de 
+    ? `Hallo Elea, ich möchte gerne eine unverbindliche Beratung vereinbaren.`
+    : `Hello Elea, I would like to arrange a consultation.`;
+  window.open(`https://wa.me/${defaults.whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+}
+
+function arrangeConsultationViaEmail() {
+  const de = getLang() === 'de';
+  const subject = de ? 'Beratungsgespräch anfragen' : 'Request a consultation';
+  const body = de 
+    ? 'Hallo Elea,%0A%0Aich möchte gerne eine unverbindliche Beratung vereinbaren.%0A%0AViele Grüße'
+    : 'Hello Elea,%0A%0AI would like to arrange a consultation.%0A%0ABest regards';
+  window.location.href = `mailto:${defaults.email}?subject=${encodeURIComponent(subject)}&body=${body}`;
+}
+
+function bookAppointmentViaWhatsApp() {
+  const de = getLang() === 'de';
+  const message = de 
+    ? `Hallo Elea, ich möchte gerne einen Termin vereinbaren.`
+    : `Hello Elea, I would like to book an appointment.`;
+  window.open(`https://wa.me/${defaults.whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
+}
+
+function bookAppointmentViaEmail() {
+  const de = getLang() === 'de';
+  const subject = de ? 'Termin vereinbaren' : 'Book an appointment';
+  const body = de 
+    ? 'Hallo Elea,%0A%0Aich möchte gerne einen Termin vereinbaren.%0A%0AViele Grüße'
+    : 'Hello Elea,%0A%0AI would like to book an appointment.%0A%0ABest regards';
+  window.location.href = `mailto:${defaults.email}?subject=${encodeURIComponent(subject)}&body=${body}`;
+}
+
+function initConsultationAndAppointmentButtons() {
+  document.querySelectorAll('[data-consultation-btn]').forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      const action = button.dataset.consultationBtn;
+      if (action === 'whatsapp') arrangeConsultationViaWhatsApp();
+      else if (action === 'email') arrangeConsultationViaEmail();
+    });
+  });
+
+  document.querySelectorAll('[data-appointment-btn]').forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      const action = button.dataset.appointmentBtn;
+      if (action === 'whatsapp') bookAppointmentViaWhatsApp();
+      else if (action === 'email') bookAppointmentViaEmail();
+    });
+  });
+}
 
 function initFloatingWhatsApp() {
   const button = document.querySelector('.whatsapp-float');
@@ -1977,6 +2071,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initServiceButtons();
   initBeforeAfterTabs();
   initFloatingWhatsApp();
+  initConsultationAndAppointmentButtons();
   initReviewModal();
   initAdminPage();
   initAdminCalendar();
