@@ -1,4 +1,12 @@
 node_modules/
+archive_dev/
+screenshots/
+assets/images/
+.vscode/
+.env
+*.log
+lighthouse_report.json
+node_modules/
 .env
 .env.local
 .DS_Store

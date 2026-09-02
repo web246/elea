@@ -391,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 const translations = {
   en: {
-    nav: { home: 'Home', about: 'About', services: 'Services', promotions: 'Benefits', transformations: 'Transformations', reviews: 'Reviews', contact: 'Contact', book: 'Book Now' },
+    nav: { home: 'Home', about: 'About', services: 'Services', promotions: 'Promotions', transformations: 'Transformations', reviews: 'Reviews', contact: 'Contact', book: 'Book Now' },
     hero: { eyebrow: 'CLEANING & HOME ORGANIZATION', headline: 'A cleaner home. A calmer life.', body: 'Premium cleaning and home organization services designed to make your Berlin home feel fresh, beautiful and effortlessly organized.', cta1: 'Book a Service', cta2: 'WhatsApp Us', manifesto: 'Your home, beautifully cared for.' },
     reasons: {
       eyebrow: 'Why Elea', heading: 'A higher standard of care.', body: 'Elea was founded on the belief that a clean, organized home is the foundation of a calmer life. Every visit is approached with meticulous attention, respect for your space, and a commitment to detail that goes beyond the expected.',
