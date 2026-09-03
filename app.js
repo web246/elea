@@ -2503,6 +2503,13 @@ function initFooterYear() {
     el.textContent = `© ${new Date().getFullYear()} Elea.`;
   });
 }
+
+function normalizeSocialIcons() {
+  document.querySelectorAll('i[data-lucide="instagram"]').forEach((icon) => {
+    icon.setAttribute('data-lucide', 'camera');
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   applyAdminSiteValues();
   // Force German as the primary site language on initial load
@@ -2531,6 +2538,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   normalizeWhatsAppLinks();
   // Ensure remaining literal English text on the page is replaced with German equivalents
   try { replaceInlineStrings(); } catch (e) { /* non-fatal */ }
+  normalizeSocialIcons();
   if (window.lucide) lucide.createIcons();
 });
 
