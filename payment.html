@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Payment — Elea</title>
+  <link rel="icon" href="assets/best.png" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/best.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-page auth-page--green-gold">
+  <div class="auth-top-bar">
+    <div class="lang-switch" aria-label="Language switcher">
+      <button type="button" class="lang-toggle-btn" data-lang-toggle="en">EN</button>
+      <span>|</span>
+      <button type="button" class="lang-toggle-btn active" data-lang-toggle="de">DE</button>
+    </div>
+    <button type="button" class="auth-close-btn" data-close-form aria-label="Close payment form">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+
+  <main class="auth-shell">
+    <div class="payment-card auth-card auth-card--gold">
+      <div class="auth-card-header payment-header">
+        <div class="auth-icon-wrap" aria-hidden="true">E</div>
+        <h1 class="auth-title" data-i18n="membership.paymentTitle">Zahlung abschließen</h1>
+        <p class="auth-subtitle" data-i18n="membership.paymentIntro">Wählen Sie Ihren Plan, senden Sie die Zahlung per WhatsApp und erstellen Sie danach Ihr Konto. Elea sendet Ihnen danach den Bestätigungscode.</p>
+      </div>
+
+      <div id="payment-details" class="payment-details"></div>
+
+      <div class="payment-actions">
+        <a id="whatsapp-pay" class="elea-button-primary" href="#" target="_blank" rel="noreferrer" data-i18n="membership.payNow">Per WhatsApp zahlen</a>
+      </div>
+
+      <div id="payment-note" class="payment-note"></div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

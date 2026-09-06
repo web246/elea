@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sign Up — Elea</title>
+  <link rel="icon" href="assets/best.png" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/best.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="auth-page auth-page--green-gold">
+  <div class="auth-top-bar">
+    <div class="lang-switch" aria-label="Language switcher">
+      <button type="button" class="lang-toggle-btn" data-lang-toggle="en">EN</button>
+      <span>|</span>
+      <button type="button" class="lang-toggle-btn active" data-lang-toggle="de">DE</button>
+    </div>
+    <button type="button" class="auth-close-btn" data-close-form aria-label="Close signup form">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+
+  <main class="auth-shell">
+    <div class="auth-card auth-card--gold">
+      <div class="auth-card-header">
+        <div class="auth-icon-wrap" aria-hidden="true">E</div>
+        <h1 class="auth-title" data-i18n="auth.register.title">Konto erstellen</h1>
+        <p class="auth-subtitle" data-i18n="auth.register.subtitle">Registrieren Sie sich, um loszulegen</p>
+      </div>
+
+      <form id="signup-form" class="auth-form">
+        <div class="auth-field">
+          <label class="auth-label" for="signup-name" data-i18n="auth.register.fullName">Vollständiger Name</label>
+          <input id="signup-name" class="auth-input" type="text" data-i18n-placeholder="auth.register.fullName" placeholder="Vollständiger Name" required />
+        </div>
+        <div class="auth-field">
+          <label class="auth-label" for="signup-email" data-i18n="auth.register.email">E-Mail</label>
+          <input id="signup-email" class="auth-input" type="email" data-i18n-placeholder="auth.register.email" placeholder="E-Mail" required />
+        </div>
+        <div class="auth-field">
+          <label class="auth-label" for="signup-phone" data-i18n="auth.register.phone">Telefon</label>
+          <input id="signup-phone" class="auth-input" type="tel" data-i18n-placeholder="auth.register.phone" placeholder="Telefonnummer" required />
+        </div>
+        <div class="auth-field">
+          <label class="auth-label" for="signup-plan-select" data-i18n="auth.register.plan">Plan auswählen</label>
+          <select id="signup-plan-select" class="auth-input auth-select">
+            <option value="basic" data-i18n="plans.basic">Basic</option>
+            <option value="premium" data-i18n="plans.premium">Premium</option>
+            <option value="vip" data-i18n="plans.vip">VIP</option>
+          </select>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label" for="signup-password" data-i18n="auth.register.password">Passwort</label>
+          <input id="signup-password" class="auth-input" type="password" data-i18n-placeholder="auth.register.password" placeholder="Passwort" required />
+        </div>
+        <div class="auth-field">
+          <label class="auth-label" for="signup-confirm-password" data-i18n="auth.register.confirm">Passwort bestätigen</label>
+          <input id="signup-confirm-password" class="auth-input" type="password" data-i18n-placeholder="auth.register.confirm" placeholder="Passwort bestätigen" required />
+        </div>
+
+        <div class="mt-4 auth-plan-summary">
+          <span data-i18n="membership.selected">Ausgewählter Plan:</span>
+          <strong id="signup-plan">Basic</strong>
+        </div>
+
+        <div class="auth-row auth-row--stacked">
+          <button type="submit" class="elea-button-primary auth-submit" data-i18n="auth.register.submitLabel">Konto erstellen</button>
+        </div>
+        <div class="auth-divider"><span data-i18n="auth.register.or">oder</span></div>
+        <div class="auth-footer">
+          <span data-i18n="auth.register.footer">Sie haben bereits ein Konto?</span>
+          <a href="login.html" data-i18n="auth.register.login">Anmelden</a>
+        </div>
+        <div id="signup-message" class="auth-error" aria-live="polite"></div>
+      </form>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

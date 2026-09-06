@@ -1,14 +1,17 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta http-equiv="refresh" content="0; url=./elea.htm" />
-    <meta name="robots" content="noindex, nofollow" />
-    <title>Admin redirect</title>
-  </head>
-  <body>
-    <p>Redirecting to ELEA admin panel...</p>
-    <script>window.location.replace('./elea.htm');</script>
-  </body>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin — Elea</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="elea-container" style="padding-top:120px; max-width:1100px;">
+    <h1 class="elea-heading" data-i18n="admin.title">Admin — Mitglieder aktivieren</h1>
+    <p class="elea-body mt-4" data-i18n="admin.subtitle">Liste der Nutzer, die auf Aktivierung warten. Aktivieren Sie ein Konto, damit es Zugriff auf das Dashboard erhält.</p>
+    <div id="admin-users" class="mt-6"></div>
+  </main>
+  <script src="app.js"></script>
+</body>
 </html>

@@ -11,6 +11,13 @@ const defaults = {
 // Set this to the backend booking endpoint. Using localhost:4001 by default.
 defaults.bookingEndpoint = 'http://localhost:4001/api/bookings';
 
+// Ensure a safe stub for lucide icons so missing icon lib doesn't break flow
+try {
+  if (typeof window !== 'undefined' && !window.lucide) {
+    window.lucide = { createIcons: () => {} };
+  }
+} catch (e) { /* ignore in non-browser contexts */ }
+
 const ADMIN_STORAGE_KEY = 'elea-admin-state';
 const ELEA_SUPABASE_URL = 'https://ttwokdovnpdvflicmyml.supabase.co';
 const ELEA_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0d29rZG92bnBkdmZsaWNteW1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgzNDM3MzEsImV4cCI6MjEwMzkxOTczMX0.sHe4AiCSEU2O7y6bYeCPemPramNVJhNB9om2AXBYmME';
@@ -299,6 +306,565 @@ function getDefaultAdminState() {
   };
 }
 
+// --- Simple local auth & membership handling (localStorage-backed) ---
+const USERS_KEY = 'elea-users';
+const SELECTED_PLAN_KEY = 'elea-selected-plan';
+const AUTH_SESSION_KEY = 'elea-session';
+
+const PLAN_VERIFICATION_CODES = {
+  basic: '0123456',
+  premium: '0234567',
+  vip: '0345678'
+};
+
+const DEMO_USERS = [
+  { id: 'demo-basic', name: 'Basic Demo', email: 'basic@test.com', phone: '+49 170 0000001', password: 'Basic123!', membership: 'basic', active: true, pendingPayment: false, isDemo: true, verificationCode: '0123456' },
+  { id: 'demo-premium', name: 'Premium Demo', email: 'premium@test.com', phone: '+49 170 0000002', password: 'Premium123!', membership: 'premium', active: true, pendingPayment: false, isDemo: true, verificationCode: '0234567' },
+  { id: 'demo-vip', name: 'VIP Demo', email: 'vip@test.com', phone: '+49 170 0000003', password: 'Vip123!', membership: 'vip', active: true, pendingPayment: false, isDemo: true, verificationCode: '0345678' }
+];
+
+const PLAN_BENEFITS = {
+  basic: {
+    label: 'Basic',
+    price: '€49 / month',
+    headline: 'Basic User',
+    summary: 'Priority booking, member-only offers, and early access to curated updates.',
+    features: [
+      'Priority booking for selected services',
+      'Member-only promotions and special offers',
+      'Early access to seasonal updates and offers',
+      'Flexible booking slots and consultation support',
+      '5% discount on selected services for 3 months'
+    ]
+  },
+  premium: {
+    label: 'Premium',
+    price: '€99 / month',
+    headline: 'Premium User',
+    summary: 'Everything in Basic plus faster access, special rates, and premium support.',
+    features: [
+      'Everything in Basic membership',
+      'Higher booking priority during busy periods',
+      'Exclusive premium offers and early access',
+      'Special rates on selected services',
+      'One complimentary small add-on per month',
+      '5% discount on selected services for 6 months'
+    ]
+  },
+  vip: {
+    label: 'VIP',
+    price: '€199 / month',
+    headline: 'VIP User',
+    summary: 'Top-tier booking priority, VIP offers, and premium concierge-level support.',
+    features: [
+      'Everything in Premium membership',
+      'Highest booking priority',
+      'Exclusive VIP promotions and newest offers',
+      'Priority access for seasonal and premium add-ons',
+      'Complimentary consultation and personalised support',
+      '5% discount on selected services for 12 months'
+    ]
+  }
+};
+
+function saveUsers(users) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users || []));
+}
+
+function getUsers() {
+  try {
+    const raw = localStorage.getItem(USERS_KEY) || '[]';
+    const parsed = JSON.parse(raw || '[]');
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed;
+    }
+    const seeded = DEMO_USERS.map((user) => ({ ...user, createdAt: new Date().toISOString() }));
+    saveUsers(seeded);
+    return seeded;
+  } catch (e) {
+    const seeded = DEMO_USERS.map((user) => ({ ...user, createdAt: new Date().toISOString() }));
+    saveUsers(seeded);
+    return seeded;
+  }
+}
+
+function findUserByEmail(email) {
+  if (!email) return null;
+  return getUsers().find(u => String(u.email).toLowerCase() === String(email).toLowerCase());
+}
+
+function getPlanVerificationCode(plan) {
+  const normalizedPlan = ['basic', 'premium', 'vip'].includes(plan) ? plan : 'basic';
+  return PLAN_VERIFICATION_CODES[normalizedPlan] || '0123456';
+}
+
+function createAccount({ name, email, phone, password, plan }) {
+  const users = getUsers();
+  if (!name || !email || !phone || !password) {
+    throw new Error('Please complete all required fields');
+  }
+  if (findUserByEmail(email)) {
+    throw new Error('An account with that email already exists');
+  }
+  const normalizedPlan = ['basic', 'premium', 'vip'].includes(plan) ? plan : 'basic';
+  const verificationCode = getPlanVerificationCode(normalizedPlan);
+  const id = 'user-' + Date.now();
+  const user = {
+    id,
+    name,
+    email,
+    phone,
+    password,
+    membership: normalizedPlan,
+    verificationCode,
+    active: false,
+    pendingPayment: true,
+    createdAt: new Date().toISOString()
+  };
+  users.push(user);
+  saveUsers(users);
+  return user;
+}
+
+function login(email, password, verificationCode) {
+  const user = findUserByEmail(email);
+  if (!user) throw new Error('No account found');
+  if (user.password !== password) throw new Error('Invalid credentials');
+
+  const expectedCode = user.verificationCode || getPlanVerificationCode(user.membership || 'basic');
+  const enteredCode = String(verificationCode || '').trim();
+  if (!user.isDemo && !user.active) {
+    if (!enteredCode || enteredCode !== expectedCode) {
+      throw new Error('The payment confirmation code is invalid');
+    }
+    user.active = true;
+    user.pendingPayment = false;
+    const users = getUsers();
+    const index = users.findIndex((item) => item.id === user.id);
+    if (index >= 0) {
+      users[index] = { ...users[index], active: true, pendingPayment: false, verificationCode: expectedCode };
+      saveUsers(users);
+    }
+  }
+
+  if (user.isDemo && enteredCode && enteredCode !== expectedCode) {
+    throw new Error('The demo code is invalid for this plan');
+  }
+
+  localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ userId: user.id }));
+  return user;
+}
+
+function logout() {
+  localStorage.removeItem(AUTH_SESSION_KEY);
+}
+
+function getCurrentUser() {
+  try {
+    const raw = localStorage.getItem(AUTH_SESSION_KEY);
+    if (!raw) return null;
+    const { userId } = JSON.parse(raw || '{}');
+    if (!userId) return null;
+    return getUsers().find(u => u.id === userId) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function getMembershipTitleName(plan) {
+  const normalized = String(plan || '').toLowerCase();
+  if (normalized === 'basic') return 'Basic User';
+  if (normalized === 'premium') return 'Premium User';
+  if (normalized === 'vip') return 'VIP User';
+  return 'Member';
+}
+
+function getMembershipFormTitle() {
+  const currentUser = getCurrentUser();
+  const plan = currentUser?.membership || getSelectedPlan();
+  return getMembershipTitleName(plan);
+}
+
+function getCurrentMembershipPlan() {
+  const currentUser = getCurrentUser();
+  const plan = currentUser?.membership || getSelectedPlan();
+  return ['basic', 'premium', 'vip'].includes(plan) ? plan : 'basic';
+}
+
+function getPlanBenefits(plan) {
+  const safePlan = ['basic', 'premium', 'vip'].includes(plan) ? plan : 'basic';
+  return PLAN_BENEFITS[safePlan] || PLAN_BENEFITS.basic;
+}
+
+function renderSpecialServicesPage() {
+  const container = document.getElementById('special-services-content');
+  if (!container) return;
+
+  const plan = getCurrentMembershipPlan();
+  const info = getPlanBenefits(plan);
+  const sessionUser = getCurrentUser();
+
+  const memberBadge = sessionUser
+    ? `${sessionUser.name || sessionUser.email || 'Member'} · ${info.label}`
+    : `${info.label} Member`;
+
+  container.innerHTML = `
+    <div class="membership-landing-header">
+      <div class="elea-eyebrow">Member access</div>
+      <h1 class="elea-heading">${info.headline}</h1>
+      <p class="elea-body">${info.summary}</p>
+    </div>
+    <div class="membership-landing-card">
+      <div class="membership-landing-plan">
+        <span class="membership-tag">${info.label}</span>
+        <strong>${info.price}</strong>
+        <small>${memberBadge}</small>
+      </div>
+      <ul class="membership-features-list">
+        ${info.features.map((feature) => `<li>${feature}</li>`).join('')}
+      </ul>
+    </div>
+    <div class="membership-service-grid">
+      ${serviceData.map((service) => `
+        <button class="service-card membership-service-card" type="button" data-service="${service.key}">
+          <div class="service-card-inner">
+            <div class="service-image-wrap"><img class="service-image" src="assets/images/kitchen.png" alt="${service.key}" /></div>
+            <div class="service-card-content">
+              <h3 class="service-card-title">${service.title}</h3>
+              <p class="elea-body service-card-desc">${service.desc}</p>
+              <span class="service-card-link">Book with ${info.label} benefits <i data-lucide="arrow-right"></i></span>
+            </div>
+          </div>
+        </button>
+      `).join('')}
+    </div>
+  `;
+
+  if (window.lucide && window.lucide.createIcons) {
+    try { window.lucide.createIcons(); } catch (e) {}
+  }
+
+  const buttons = container.querySelectorAll('[data-service]');
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const service = button.getAttribute('data-service');
+      if (service) {
+        openBookingModal(service);
+      }
+    });
+  });
+}
+
+function syncGuestBookingChoiceLanguage(modal) {
+  if (!modal) return;
+
+  const isGerman = getLang() === 'de';
+  const title = modal.querySelector('[data-guest-title]');
+  const summary = modal.querySelector('[data-guest-summary]');
+  const continueBtn = modal.querySelector('#guest-continue');
+  const signupBtn = modal.querySelector('#guest-signup');
+  const loginBtn = modal.querySelector('#guest-login');
+
+  if (title) {
+    title.textContent = isGerman ? 'Weiter ohne Konto?' : 'Continue without account?';
+  }
+
+  if (summary) {
+    summary.textContent = isGerman
+      ? 'Sie können ohne Konto fortfahren oder sich anmelden/registrieren, um Mitgliedervorteile zu erhalten.'
+      : 'You can continue as a guest or sign up/log in to unlock member benefits.';
+  }
+
+  if (continueBtn) {
+    continueBtn.textContent = isGerman ? 'Weiter als Gast' : 'Continue as guest';
+  }
+
+  if (signupBtn) {
+    signupBtn.textContent = isGerman ? 'Konto erstellen' : 'Create account';
+  }
+
+  if (loginBtn) {
+    loginBtn.textContent = isGerman ? 'Anmelden' : 'Log in';
+  }
+}
+
+function closeGuestBookingChoice(modal) {
+  if (!modal) return;
+  modal.classList.remove('open');
+  setTimeout(() => modal.remove(), 200);
+}
+
+// Show modal that allows guest booking or redirect to login/signup
+function showGuestBookingChoice(href) {
+  const existing = document.querySelector('.guest-book-modal');
+  if (existing) return;
+  const modal = document.createElement('div');
+  modal.className = 'elea-modal guest-book-modal';
+  modal.innerHTML = `
+    <div class="elea-modal-inner guest-book-card">
+      <div class="guest-book-header">
+        <h2 data-guest-title>Weiter ohne Konto?</h2>
+        <button type="button" class="guest-book-close-btn" aria-label="Close guest booking choice">&times;</button>
+      </div>
+      <div class="guest-book-body">
+        <p data-guest-summary>Sie können ohne Konto fortfahren oder sich anmelden/registrieren, um Mitgliedervorteile zu erhalten.</p>
+        <div class="guest-actions">
+          <button class="elea-button-outline" id="guest-continue">Weiter als Gast</button>
+          <button class="elea-button-primary" id="guest-signup">Konto erstellen</button>
+          <button class="elea-link" id="guest-login">Anmelden</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  syncGuestBookingChoiceLanguage(modal);
+  requestAnimationFrame(() => modal.classList.add('open'));
+
+  modal.querySelector('.guest-book-close-btn')?.addEventListener('click', () => closeGuestBookingChoice(modal));
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) {
+      closeGuestBookingChoice(modal);
+    }
+  });
+
+  // Helper to persist the intended service so login/signup can continue the flow
+  function setIntended(v) {
+    try {
+      if (!v) localStorage.setItem('elea-intended-service', '');
+      else localStorage.setItem('elea-intended-service', String(v));
+    } catch (e) { /* ignore */ }
+  }
+
+  modal.querySelector('#guest-continue').addEventListener('click', () => {
+    modal.classList.remove('open');
+    setTimeout(() => modal.remove(), 250);
+    // If caller passed a service key (not a URL), remember it and try to open the modal here
+    if (href && !href.includes('.html') && !href.startsWith('http') && !href.startsWith('#')) {
+      setIntended(href);
+      // If booking modal exists on this page, open it directly prefilled
+      if (document.getElementById('booking-modal')) {
+        openBookingModal(href);
+        return;
+      }
+      // otherwise go to services page where the intended service will be read
+      window.location.href = 'services.html';
+      return;
+    }
+    if (href && href.includes('services')) {
+      window.location.href = href;
+    } else if (href && href.startsWith('#')) {
+      window.location.href = 'index.html' + href;
+    } else {
+      window.location.href = 'services.html';
+    }
+  });
+  modal.querySelector('#guest-signup').addEventListener('click', () => {
+    // remember where the user intended to book so we can continue after signup/login
+    setIntended(href || '');
+    window.location.href = 'signup.html';
+  });
+  modal.querySelector('#guest-login').addEventListener('click', () => {
+    setIntended(href || '');
+    window.location.href = 'login.html';
+  });
+}
+
+function setSelectedPlan(plan) {
+  const safePlan = ['basic', 'premium', 'vip'].includes(plan) ? plan : 'basic';
+  localStorage.setItem(SELECTED_PLAN_KEY, safePlan);
+}
+
+function getSelectedPlan() {
+  const plan = localStorage.getItem(SELECTED_PLAN_KEY) || 'basic';
+  return ['basic', 'premium', 'vip'].includes(plan) ? plan : 'basic';
+}
+
+function redirectToPayment(user) {
+  if (user && user.id) localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify({ userId: user.id }));
+  window.location.href = 'payment.html';
+}
+
+// --- DOM wiring for pages ---
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('[data-close-form]').forEach((button) => {
+    button.addEventListener('click', () => {
+      window.location.href = 'index.html';
+    });
+  });
+
+  try {
+    document.querySelectorAll('.plan-card').forEach((el) => {
+      el.addEventListener('click', () => {
+        const plan = el.getAttribute('data-plan') || 'basic';
+        setSelectedPlan(plan);
+        if (['basic', 'premium', 'vip'].includes(plan)) {
+          window.location.href = 'signup.html';
+          return;
+        }
+        window.location.href = 'signup.html';
+      });
+    });
+  } catch (e) { /* ignore if not on homepage */ }
+
+  const topLogin = document.getElementById('top-login-btn');
+  if (topLogin) {
+    topLogin.addEventListener('click', () => {
+      // navigate by link default
+    });
+  }
+
+  const signupForm = document.getElementById('signup-form');
+  if (signupForm) {
+    const planSelect = document.getElementById('signup-plan-select');
+    const planSpan = document.getElementById('signup-plan');
+    const selectedPlan = getSelectedPlan();
+    if (planSelect) {
+      planSelect.value = ['basic', 'premium', 'vip'].includes(selectedPlan) ? selectedPlan : 'basic';
+    }
+    if (planSpan) {
+      planSpan.textContent = (planSelect ? planSelect.value : selectedPlan).toUpperCase();
+    }
+    if (planSelect) {
+      planSelect.addEventListener('change', (event) => {
+        const nextPlan = event.target.value || 'basic';
+        setSelectedPlan(nextPlan);
+        if (planSpan) planSpan.textContent = nextPlan.toUpperCase();
+      });
+    }
+    signupForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('signup-name')?.value?.trim();
+      const email = document.getElementById('signup-email')?.value?.trim();
+      const phone = document.getElementById('signup-phone')?.value?.trim();
+      const password = document.getElementById('signup-password')?.value || '';
+      const confirmPassword = document.getElementById('signup-confirm-password')?.value || '';
+      const msg = document.getElementById('signup-message');
+      if (password !== confirmPassword) {
+        if (msg) {
+          msg.textContent = 'Passwords do not match.';
+          msg.classList.add('show');
+        }
+        return;
+      }
+      try {
+        const plan = planSelect ? planSelect.value : getSelectedPlan();
+        setSelectedPlan(plan);
+        const user = createAccount({ name, email, phone, password, plan });
+        if (msg) {
+          msg.textContent = user && user.pendingPayment ? 'Konto erstellt. Bitte fahren Sie mit der Zahlung fort.' : 'Account created successfully.';
+          msg.classList.add('show');
+        }
+        window.location.href = 'payment.html';
+      } catch (err) {
+        if (msg) {
+          msg.textContent = err.message || 'Unable to create account';
+          msg.classList.add('show');
+        }
+      }
+    });
+  }
+
+  const loginForm = document.getElementById('login-form');
+  if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const email = document.getElementById('login-email')?.value?.trim();
+      const password = document.getElementById('login-password')?.value || '';
+      const confirmationCode = document.getElementById('login-code')?.value || '';
+      const msg = document.getElementById('login-message');
+      try {
+        const user = login(email, password, confirmationCode);
+        if (user.pendingPayment && !user.active) {
+          if (msg) msg.textContent = 'Ihr Konto wartet noch auf die Freischaltung durch Elea.';
+          setTimeout(() => {
+            window.location.href = 'special-services.html';
+          }, 700);
+          return;
+        }
+        window.location.href = 'special-services.html';
+      } catch (err) {
+        if (msg) { msg.textContent = err.message || 'Login failed'; }
+      }
+    });
+  }
+
+  const paymentDetails = document.getElementById('payment-details');
+  const whatsappPay = document.getElementById('whatsapp-pay');
+  if (paymentDetails && whatsappPay) {
+    const user = getCurrentUser();
+    const selectedPlan = getSelectedPlan();
+    const plan = user?.membership || selectedPlan || 'basic';
+    const isGerman = getLang() === 'de';
+    const priceMap = { basic: '49', premium: '99', vip: '199' };
+    const amount = priceMap[plan] ? `€${priceMap[plan]}/Monat` : '—';
+    paymentDetails.innerHTML = `
+      <div class="elea-body">${isGerman ? 'Plan:' : 'Plan:'} <strong>${plan.toUpperCase()}</strong></div>
+      <div class="elea-body mt-2">${isGerman ? 'Preis:' : 'Price:'} <strong>${amount}</strong></div>
+      ${user ? `<div class="elea-body mt-2">${isGerman ? 'Konto:' : 'Account:'} <strong>${escapeHtml(user.email)}</strong></div>` : `<div class="elea-body mt-2">${isGerman ? 'Bitte erstellen Sie anschließend ein Konto.' : 'Please create an account next.'}</div>`}
+    `;
+    const message = isGerman
+      ? `Hallo Elea, ich möchte den ${plan.toUpperCase()}-Plan buchen. Bitte senden Sie mir die Zahlungsinformationen. ${user ? 'E-Mail: ' + user.email : ''}`
+      : `Hello Elea, I would like to book the ${plan.toUpperCase()} plan. Please send me the payment details. ${user ? 'Email: ' + user.email : ''}`;
+    const wa = `https://wa.me/${defaults.whatsappNumber}?text=${encodeURIComponent(message)}`;
+    whatsappPay.setAttribute('href', wa);
+    const paymentNote = document.getElementById('payment-note');
+    if (paymentNote) {
+      paymentNote.textContent = isGerman
+        ? 'Nach der Zahlung bestätigt Elea Ihre Freischaltung. Danach können Sie sich mit Ihrer E-Mail, Ihrem Passwort und dem verifizierten Code einloggen.'
+        : 'After payment, Elea will confirm your activation. Then you can log in with your email, password and verification code.';
+    }
+  }
+
+  const adminUsersNode = document.getElementById('admin-users');
+  if (adminUsersNode) {
+    const users = getUsers();
+    if (users.length === 0) {
+      adminUsersNode.innerHTML = '<div class="elea-body">No users found.</div>';
+    } else {
+      const pending = users.filter(u => !u.active);
+      if (pending.length === 0) {
+        adminUsersNode.innerHTML = '<div class="elea-body">No pending activations.</div>';
+      } else {
+        adminUsersNode.innerHTML = '';
+        pending.forEach(u => {
+          const el = document.createElement('div');
+          el.className = 'admin-user-row';
+          el.innerHTML = `<div><strong>${escapeHtml(u.name || u.email)}</strong> — ${escapeHtml(u.email)} — Plan: ${escapeHtml(u.membership)}</div><div style="margin-top:8px;"><button class="elea-button-primary activate-btn" data-user="${u.id}">Activate</button> <button class="elea-button-outline remove-btn" data-user="${u.id}">Remove</button></div>`;
+          adminUsersNode.appendChild(el);
+        });
+        adminUsersNode.querySelectorAll('.activate-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-user');
+            const usersAll = getUsers();
+            const user = usersAll.find(x => x.id === id);
+            if (user) {
+              user.active = true;
+              user.pendingPayment = false;
+              saveUsers(usersAll);
+              btn.textContent = 'Activated';
+              btn.disabled = true;
+            }
+          });
+        });
+        adminUsersNode.querySelectorAll('.remove-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-user');
+            const usersAll = getUsers().filter(x => x.id !== id);
+            saveUsers(usersAll);
+            btn.closest('.admin-user-row').remove();
+          });
+        });
+      }
+    }
+  }
+
+  if (document.body.dataset.page === 'special-services' || window.location.pathname.endsWith('special-services.html')) {
+    renderSpecialServicesPage();
+  }
+
+});
+
+
 function normalizeAdminState(raw) {
   const base = getDefaultAdminState();
   const state = raw && typeof raw === 'object' ? raw : {};
@@ -389,6 +955,79 @@ document.addEventListener('DOMContentLoaded', function () {
   } catch (e) { /* non-fatal */ }
 });
 
+const BERLIN_STREET_OPTIONS = [
+  { street: 'Alexanderstraße', postcode: '10178', district: 'Mitte' },
+  { street: 'Alte Schönhauser Straße', postcode: '10119', district: 'Mitte' },
+  { street: 'Ackerstraße', postcode: '10115', district: 'Mitte' },
+  { street: 'Am Küstendamm', postcode: '14059', district: 'Charlottenburg' },
+  { street: 'Bergmannstraße', postcode: '10961', district: 'Kreuzberg' },
+  { street: 'Bismarckstraße', postcode: '10627', district: 'Charlottenburg' },
+  { street: 'Borsigstraße', postcode: '10555', district: 'Moabit' },
+  { street: 'Breite Straße', postcode: '12107', district: 'Steglitz' },
+  { street: 'Brunnenstraße', postcode: '10119', district: 'Mitte' },
+  { street: 'Chausseestraße', postcode: '10115', district: 'Mitte' },
+  { street: 'Cottbusser Damm', postcode: '10967', district: 'Kreuzberg' },
+  { street: 'Dresdener Straße', postcode: '10999', district: 'Kreuzberg' },
+  { street: 'Eberswalder Straße', postcode: '10437', district: 'Prenzlauer Berg' },
+  { street: 'Fasanenstraße', postcode: '10719', district: 'Wilmersdorf' },
+  { street: 'Frankfurter Allee', postcode: '10247', district: 'Friedrichshain' },
+  { street: 'Friedrichstraße', postcode: '10117', district: 'Mitte' },
+  { street: 'Güntzelstraße', postcode: '10717', district: 'Charlottenburg' },
+  { street: 'Hauptstraße', postcode: '12159', district: 'Steglitz' },
+  { street: 'Heidelberger Platz', postcode: '14197', district: 'Wilmersdorf' },
+  { street: 'Hermannstraße', postcode: '12049', district: 'Neukölln' },
+  { street: 'Hohenzollernstraße', postcode: '10717', district: 'Wilmersdorf' },
+  { street: 'Kaiserdamm', postcode: '14057', district: 'Charlottenburg' },
+  { street: 'Kaiserstraße', postcode: '14193', district: 'Zehlendorf' },
+  { street: 'Karl-Marx-Straße', postcode: '12043', district: 'Neukölln' },
+  { street: 'Kastanienallee', postcode: '10435', district: 'Prenzlauer Berg' },
+  { street: 'Kottbusser Damm', postcode: '10967', district: 'Kreuzberg' },
+  { street: 'Leipziger Straße', postcode: '10117', district: 'Mitte' },
+  { street: 'Lichtenberger Allee', postcode: '10369', district: 'Lichtenberg' },
+  { street: 'Mollstraße', postcode: '10178', district: 'Mitte' },
+  { street: 'Müllerstraße', postcode: '13349', district: 'Wedding' },
+  { street: 'Nettelbeckstraße', postcode: '12059', district: 'Neukölln' },
+  { street: 'Nikolaistraße', postcode: '10179', district: 'Mitte' },
+  { street: 'Oranienburger Straße', postcode: '10117', district: 'Mitte' },
+  { street: 'Potsdamer Straße', postcode: '10785', district: 'Tiergarten' },
+  { street: 'Prenzlauer Allee', postcode: '10405', district: 'Prenzlauer Berg' },
+  { street: 'Reichenberger Straße', postcode: '10999', district: 'Kreuzberg' },
+  { street: 'Rosa-Luxemburg-Straße', postcode: '10178', district: 'Mitte' },
+  { street: 'Schönhauser Allee', postcode: '10435', district: 'Prenzlauer Berg' },
+  { street: 'Schlesische Straße', postcode: '10997', district: 'Kreuzberg' },
+  { street: 'Sonnenallee', postcode: '12047', district: 'Neukölln' },
+  { street: 'Stralauer Allee', postcode: '10245', district: 'Friedrichshain' },
+  { street: 'Tempelhofer Damm', postcode: '12099', district: 'Tempelhof' },
+  { street: 'Torstraße', postcode: '10119', district: 'Mitte' },
+  { street: 'Uhlandstraße', postcode: '10623', district: 'Charlottenburg' },
+  { street: 'Ullsteinstraße', postcode: '12109', district: 'Steglitz' },
+  { street: 'Unter den Linden', postcode: '10117', district: 'Mitte' },
+  { street: 'Warschauer Straße', postcode: '10243', district: 'Friedrichshain' },
+  { street: 'Wilmersdorfer Straße', postcode: '10627', district: 'Charlottenburg' },
+  { street: 'Wittenbergplatz', postcode: '10789', district: 'Schöneberg' },
+  { street: 'Yorckstraße', postcode: '10965', district: 'Kreuzberg' },
+  { street: 'Zionskirchstraße', postcode: '10119', district: 'Mitte' },
+  { street: 'Zossener Straße', postcode: '10961', district: 'Kreuzberg' },
+  { street: 'Bergstraße', postcode: '12169', district: 'Steglitz' },
+  { street: 'Buchholzer Straße', postcode: '13127', district: 'Pankow' },
+  { street: 'Danziger Straße', postcode: '10435', district: 'Prenzlauer Berg' },
+  { street: 'Gneisenaustraße', postcode: '10961', district: 'Kreuzberg' },
+  { street: 'Grunewaldstraße', postcode: '12165', district: 'Steglitz' },
+  { street: 'Hardenbergstraße', postcode: '10623', district: 'Charlottenburg' },
+  { street: 'Hedemannstraße', postcode: '10249', district: 'Friedrichshain' },
+  { street: 'Kiefertstraße', postcode: '12627', district: 'Hellersdorf' },
+  { street: 'Märkische Allee', postcode: '10315', district: 'Lichtenberg' },
+  { street: 'Mühlenstraße', postcode: '10243', district: 'Friedrichshain' },
+  { street: 'Niederkirchnerstraße', postcode: '10117', district: 'Mitte' },
+  { street: 'Rathenower Straße', postcode: '10557', district: 'Moabit' },
+  { street: 'Rüdesheimer Straße', postcode: '14197', district: 'Wilmersdorf' },
+  { street: 'Südstern', postcode: '12047', district: 'Neukölln' },
+  { street: 'Teuplitzstraße', postcode: '12353', district: 'Tempelhof' },
+  { street: 'Walther-Schreiber-Platz', postcode: '10629', district: 'Charlottenburg' },
+  { street: 'Wilhelmstraße', postcode: '10117', district: 'Mitte' },
+  { street: 'Zimmerstraße', postcode: '10117', district: 'Mitte' }
+];
+
 const translations = {
   en: {
     nav: { home: 'Home', about: 'About', services: 'Services', promotions: 'Promotions', transformations: 'Transformations', reviews: 'Reviews', contact: 'Contact', book: 'Book Now' },
@@ -450,8 +1089,9 @@ const translations = {
         { value: 'KE', label: '🇰🇪 Kenia (+254)' }
       ],
       postcodeOptions: ['10115', '10117', '10119', '10178', '10243', '10435', '10437', '10439', '10551', '10557', '10629', '10777', '10779', '10961', '10963', '12043', '12045', '12047', '12099', '12157', '12163', '12203', '12247', '12347', '12435', '12459', '12487', '13347', '13349', '13581', '13585', '13589', '14193', '14199', '14305', '14309'],
-      streetOptions: ['Friedrichstraße', 'Schönhauser Allee', 'Bergmannstraße', 'Kottbusser Damm', 'Müllerstraße', 'Torstraße', 'Potsdamer Straße', 'Oranienburger Straße', 'Hauptstraße', 'Kaiserstraße', 'Prenzlauer Allee', 'Frankfurter Allee', 'Other'],
-      locationOptions: ['Berlin Mitte', 'Berlin Neukölln', 'Berlin Prenzlauer Berg', 'Berlin Friedrichshain', 'Berlin Charlottenburg', 'Berlin Kreuzberg', 'Berlin Tempelhof', 'Berlin Schöneberg', 'Berlin Pankow', 'Berlin Other'],
+      streetOptions: BERLIN_STREET_OPTIONS.map(({ street, postcode }) => `${street} (${postcode})`),
+      // Full Berlin locations list (explicit literal to avoid forward-reference issues)
+      locationOptions: ['Mitte', 'Moabit', 'Wedding', 'Tiergarten', 'Hansaviertel', 'Friedrichshain', 'Kreuzberg', 'Neukölln', 'Tempelhof', 'Schöneberg', 'Friedenau', 'Steglitz', 'Zehlendorf', 'Charlottenburg', 'Wilmersdorf', 'Spandau', 'Reinickendorf', 'Pankow', 'Prenzlauer Berg', 'Weißensee', 'Lichtenberg', 'Falkensee', 'Marzahn', 'Hellersdorf', 'Treptow', 'Köpenick', 'Biesdorf', 'Grunewald', 'Gatow', 'Nikolassee', 'Lichterfelde', 'Tegel', 'Buch', 'Karow', 'Blankenburg', 'Mahlsdorf', 'Wittenau', 'Britz', 'Gropiusstadt', 'Baumschulenweg', 'Johannisthal', 'Adlershof', 'Plänterwald', 'Rummelsburg', 'Fennpfuhl', 'Rudow', 'Altglienicke', 'Neu-Hohenschönhausen'] ,
       reviewQuestion: 'Review your request',
       successTitle: 'Request Received', successBody: 'Your booking request has been received. Elea will contact you via WhatsApp or email to confirm availability and final details.', referenceLabel: 'Your booking reference', whatsappBtn: 'Send via WhatsApp', emailBtn: 'Send via Email', closeBtn: 'Close',
       required: 'This field is required', selectService: 'Please select at least one service', selectRooms: 'Please select the number of rooms', selectDate: 'Please select a date', selectTime: 'Please select a time',
@@ -460,7 +1100,8 @@ const translations = {
       completeContact: 'Please complete all required contact details.',
       rooms: ['1', '2', '3', '4', '5', '6+'],
       areas: ['Kitchen', 'Bathroom', 'Bedroom', 'Living room', 'Windows', 'Oven', 'Appliances', 'Wardrobe', 'Other'],
-      times: ['08:00', '10:00', '12:00', '14:00', '16:00'],
+      // Full 24-hour clock options (every hour)
+      times: ['00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00'],
       types: [
         { name: 'Regelmäßige Reinigung', desc: 'Regelmäßige Unterhaltsreinigung für ein konstant frisches Zuhause.' },
         { name: 'Tiefenreinigung', desc: 'Eine gründliche, detaillierte Reinigung jeder Oberfläche und Ecke.' }
@@ -479,8 +1120,11 @@ const translations = {
       eyebrow: 'Legal',
       title: 'Booking & Cancellation',
       s1: { title: 'Booking Process', body: 'To book an ELEA service, you may contact us via phone, email, WhatsApp or the booking form on this website. We confirm availability and service details before the appointment is finalized.' },
-      s2: { title: 'Cancellation Policy', body: 'We understand schedules change. If you need to cancel or reschedule your booking, please contact us as soon as possible. We will do our best to accommodate a new time slot.' },
-      s3: { title: 'Late Arrivals', body: 'Late arrivals may affect the appointment duration and therefore the service completion time. We appreciate your understanding and will communicate any changes as clearly as possible.' }
+      s2: { title: 'Cancellation Policy', body: 'At Elea Cleaning & Home Organization, we reserve time specifically for each client and prepare our schedule and resources in advance. Cancellations made more than 24 hours before the appointment are free of charge. Cancellations made less than 24 hours before the appointment may be subject to a cancellation fee of 30% of the booked service price. Cancellations made less than 4 hours before the appointment may be subject to a cancellation fee of 50% of the booked service price. If a client does not show up or is unavailable when our team arrives, the booking may be treated as a no-show and a fee of up to 50% of the booked service price may apply. For cancellations caused by an emergency or circumstances outside the client’s reasonable control, Elea may waive or reduce the cancellation fee at its discretion.' },
+      s3: { title: 'Rescheduling Policy', body: 'We understand that plans can change. We are happy to accommodate appointment changes whenever possible. Appointments can be rescheduled free of charge when requested more than 24 hours in advance. Rescheduling requests made less than 24 hours before the appointment may be subject to a 30% rescheduling fee. Rescheduling is subject to availability and cannot be guaranteed for the same day or preferred time. Repeated last-minute rescheduling may require a deposit or advance payment for future bookings. Membership benefits such as free rescheduling apply only according to the terms of the selected membership plan.' },
+      s4: { title: 'Deposit & Advance Payment', body: 'For certain bookings, Elea may require a deposit or partial payment before confirming the appointment. If a required deposit has been paid, any applicable cancellation or rescheduling fee may be deducted from the deposit.' },
+      s5: { title: 'Late Arrival', body: 'Clients are expected to provide access to the property at the agreed appointment time. If our team is required to wait because access is unavailable, the appointment may be shortened or an additional waiting fee may apply. If the delay significantly affects the scheduled service, Elea reserves the right to reschedule the appointment.' },
+      s6: { title: 'Important', body: 'By booking an Elea service, the client acknowledges and accepts these cancellation and rescheduling conditions. Elea reserves the right to make reasonable exceptions in genuine emergencies or exceptional circumstances.' }
     },
     impressum: {
       eyebrow: 'Legal',
@@ -499,8 +1143,23 @@ const translations = {
       s4: { title: '4. Your rights', body: 'You have the right to access, rectify, erase and restrict processing of your personal data.' }
     },
     legalPages: { impressum: 'Impressum', datenschutz: 'Datenschutzerklärung', terms: 'Terms & Conditions', cancellation: 'Booking & Cancellation' },
-    auth: { login: { title: 'Welcome back', subtitle: 'Log in to your account', footer: 'Don\'t have an account?', create: 'Create one', or: 'or', g: 'Continue with Google', email: 'Email', password: 'Password', forgot: 'Forgot password?', submitLabel: 'Log in', loading: 'Logging in...' }, register: { title: 'Create your account', subtitle: 'Sign up to get started', footer: 'Already have an account?', login: 'Log in', or: 'or', g: 'Continue with Google', email: 'Email', password: 'Password', confirm: 'Confirm Password', submitLabel: 'Create account', loading: 'Creating account...' }, verify: { title: 'Verify your email', subtitle: 'We sent a code to', resend: 'Resend', verify: 'Verify', verifying: 'Verifying...' }, forgot: { title: 'Forgot your password?', subtitle: 'We\'ll send a reset link to your email', submit: 'Send reset link', email: 'Email', success: 'If an account exists for that email, we\'ve sent a reset link.' }, reset: { title: 'Reset your password', subtitle: 'Choose a new password', new: 'New password', confirm: 'Confirm password', submit: 'Reset password' } },
-    admin: { bookings: 'Bookings', reviews: 'Reviews', settings: 'Settings' },
+    auth: { topText: 'Sign in', topBtn: 'Sign in', logout: 'Log out', login: { title: 'Welcome back', subtitle: 'Log in to your account', footer: 'Don\'t have an account?', create: 'Create one', or: 'or', g: 'Continue with Google', email: 'Email', password: 'Password', forgot: 'Forgot password?', submitLabel: 'Log in', loading: 'Logging in...' }, register: { title: 'Create your account', subtitle: 'Sign up to get started', footer: 'Already have an account?', login: 'Log in', or: 'or', g: 'Continue with Google', email: 'Email', password: 'Password', confirm: 'Confirm Password', submitLabel: 'Create account', loading: 'Creating account...' }, verify: { title: 'Verify your email', subtitle: 'We sent a code to', resend: 'Resend', verify: 'Verify', verifying: 'Verifying...' }, forgot: { title: 'Forgot your password?', subtitle: 'We\'ll send a reset link to your email', submit: 'Send reset link', email: 'Email', success: 'If an account exists for that email, we\'ve sent a reset link.' }, reset: { title: 'Reset your password', subtitle: 'Choose a new password', new: 'New password', confirm: 'Confirm password', submit: 'Reset password' } },
+    admin: { title: 'Admin — Activate Members', subtitle: 'List of users pending activation', bookings: 'Bookings', reviews: 'Reviews', settings: 'Settings' },
+    membership: {
+      eyebrow: 'Become an Elea Member',
+      heading: 'Choose your membership plan',
+      body: 'Choose a plan, pay by WhatsApp, and then create your account.',
+      cta: 'Become a member',
+      plans: {
+        basic: { label: 'Basic', title: 'Basic', price: '€49 / month', f1: 'Priority booking', f2: 'Member-only promotions', f3: 'Early access to special offers', f4: 'Flexible booking options', f5: 'Free cleaning consultation', f6: 'Birthday month special offer', f7: '5% discount on services for 3 months' },
+        premium: { label: 'Premium', title: 'Premium', price: '€99 / month', f1: 'Everything in Basic Membership', f2: 'Higher booking priority', f3: 'Exclusive member-only offers', f4: 'Early access to promotions', f5: 'One complimentary consultation per month', f6: 'Special rates on selected services', f7: 'One complimentary small add-on per month', f8: 'Flexible rescheduling', f9: '5% discount on services for 6 months' },
+        vip: { label: 'VIP', title: 'VIP', price: '€199 / month', f1: 'Everything in Premium Membership', f2: 'Highest booking priority', f3: 'Exclusive VIP promotions', f4: 'Early access to new services and offers', f5: 'Complimentary consultations', f6: 'Special rates on premium and additional services', f7: 'Priority access during busy periods', f8: 'One complimentary small add-on per month', f9: 'Premium referral rewards', f10: '5% discount on services for 12 months' }
+      },
+      paymentTitle: 'Complete payment',
+      paymentIntro: 'To finish your membership, follow the instructions below and pay via WhatsApp. After payment, Elea will confirm and manually activate your account.',
+      selected: 'Selected plan:',
+      dashboardTitle: 'Your dashboard'
+    },
     common: { continue: 'Continue', back: 'Back', save: 'Save', close: 'Close' }
   },
   admin: {
@@ -582,8 +1241,9 @@ const translations = {
         { value: 'KE', label: '🇰🇪 Kenia (+254)' }
       ],
       postcodeOptions: ['10115', '10117', '10119', '10178', '10243', '10435', '10437', '10439', '10551', '10557', '10629', '10777', '10779', '10961', '10963', '12043', '12045', '12047', '12099', '12157', '12163', '12203', '12247', '12347', '12435', '12459', '12487', '13347', '13349', '13581', '13585', '13589', '14193', '14199', '14305', '14309'],
-      streetOptions: ['Friedrichstraße', 'Schönhauser Allee', 'Bergmannstraße', 'Kottbusser Damm', 'Müllerstraße', 'Torstraße', 'Potsdamer Straße', 'Oranienburger Straße', 'Hauptstraße', 'Kaiserstraße', 'Prenzlauer Allee', 'Frankfurter Allee', 'Andere'],
-      locationOptions: ['Berlin Mitte', 'Berlin Neukölln', 'Berlin Prenzlauer Berg', 'Berlin Friedrichshain', 'Berlin Charlottenburg', 'Berlin Kreuzberg', 'Berlin Tempelhof', 'Berlin Schöneberg', 'Berlin Pankow', 'Berlin Andere'],
+      streetOptions: BERLIN_STREET_OPTIONS.map(({ street, postcode }) => `${street} (${postcode})`),
+      // Full Berlin locations list (explicit literal to avoid forward-reference issues)
+      locationOptions: ['Mitte', 'Moabit', 'Wedding', 'Tiergarten', 'Hansaviertel', 'Friedrichshain', 'Kreuzberg', 'Neukölln', 'Tempelhof', 'Schöneberg', 'Friedenau', 'Steglitz', 'Zehlendorf', 'Charlottenburg', 'Wilmersdorf', 'Spandau', 'Reinickendorf', 'Pankow', 'Prenzlauer Berg', 'Weißensee', 'Lichtenberg', 'Falkensee', 'Marzahn', 'Hellersdorf', 'Treptow', 'Köpenick', 'Biesdorf', 'Grunewald', 'Gatow', 'Nikolassee', 'Lichterfelde', 'Tegel', 'Buch', 'Karow', 'Blankenburg', 'Mahlsdorf', 'Wittenau', 'Britz', 'Gropiusstadt', 'Baumschulenweg', 'Johannisthal', 'Adlershof', 'Plänterwald', 'Rummelsburg', 'Fennpfuhl', 'Rudow', 'Altglienicke', 'Neu-Hohenschönhausen'] ,
       reviewQuestion: 'Überprüfen Sie Ihre Anfrage',
       successTitle: 'Anfrage eingegangen', successBody: 'Ihre Buchungsanfrage ist eingegangen. Elea wird Sie per WhatsApp oder E-Mail kontaktieren, um Verfügbarkeit und Details zu bestätigen.', referenceLabel: 'Ihre Buchungsreferenz', whatsappBtn: 'Per WhatsApp senden', emailBtn: 'Per E-Mail senden', closeBtn: 'Schließen',
       required: 'Dieses Feld ist erforderlich', selectService: 'Bitte wählen Sie mindestens eine Leistung', selectRooms: 'Bitte wählen Sie die Anzahl der Räume', selectDate: 'Bitte wählen Sie ein Datum', selectTime: 'Bitte wählen Sie eine Zeit',
@@ -592,7 +1252,8 @@ const translations = {
       completeContact: 'Bitte füllen Sie alle erforderlichen Kontaktdaten aus.',
       rooms: ['1', '2', '3', '4', '5', '6+'],
       areas: ['Küche', 'Badezimmer', 'Schlafzimmer', 'Wohnzimmer', 'Fenster', 'Ofen', 'Geräte', 'Kleiderschrank', 'Andere'],
-      times: ['08:00', '10:00', '12:00', '14:00', '16:00'],
+      // Full 24-hour clock options (every hour)
+      times: ['00:00','01:00','02:00','03:00','04:00','05:00','06:00','07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00'],
       types: [
         { name: 'Regular Cleaning', desc: 'Regelmäßige Unterhaltsreinigung für ein konstant frisches Zuhause.' },
         { name: 'Deep Cleaning', desc: 'Eine gründliche, detaillierte Reinigung jeder Oberfläche und Ecke.' }
@@ -611,8 +1272,11 @@ const translations = {
       eyebrow: 'Rechtliches',
       title: 'Buchung & Stornierung',
       s1: { title: 'Buchungsprozess', body: 'Um einen ELEA-Service zu buchen, können Sie uns telefonisch, per E-Mail, WhatsApp oder über das Buchungsformular auf dieser Website kontaktieren. Wir bestätigen Verfügbarkeit und Leistungsdetails, bevor der Termin finalisiert wird.' },
-      s2: { title: 'Stornierungsbedingungen', body: 'Wir verstehen, dass sich Pläne ändern können. Wenn Sie eine Buchung stornieren oder verschieben müssen, kontaktieren Sie uns bitte so bald wie möglich. Wir bemühen uns, einen neuen Termin zu ermöglichen.' },
-      s3: { title: 'Verspätete Ankunft', body: 'Verspätete Ankünfte können die Dauer des Termins und damit die Fertigstellung der Leistung beeinträchtigen. Wir danken für Ihr Verständnis und werden Änderungen klar kommunizieren.' }
+      s2: { title: 'Stornierungsbedingungen', body: 'Bei Elea Cleaning & Home Organization reservieren wir für jeden Kunden gezielt Zeit und bereiten unseren Zeitplan und unsere Ressourcen im Voraus vor. Stornierungen, die mehr als 24 Stunden vor dem Termin erfolgen, sind kostenlos. Stornierungen, die weniger als 24 Stunden vor dem Termin erfolgen, können eine Stornogebühr in Höhe von 30 % des gebuchten Servicepreises zur Folge haben. Stornierungen, die weniger als 4 Stunden vor dem Termin erfolgen, können eine Stornogebühr in Höhe von 50 % des gebuchten Servicepreises zur Folge haben. Wenn ein Kunde nicht erscheint oder bei unserer Ankunft nicht erreichbar ist, kann die Buchung als No-Show behandelt werden und eine Gebühr von bis zu 50 % des gebuchten Servicepreises anfallen. Bei durch Notfälle oder Umstände außerhalb der zumutbaren Kontrolle des Kunden verursachten Stornierungen kann Elea die Stornogebühr nach eigenem Ermessen erlassen oder reduzieren.' },
+      s3: { title: 'Umbuchungsbedingungen', body: 'Wir verstehen, dass sich Pläne ändern können. Wir bemühen uns, Terminänderungen so weit wie möglich zu berücksichtigen. Termine können kostenlos umgebucht werden, wenn die Anfrage mehr als 24 Stunden im Voraus gestellt wird. Umbuchungsanfragen, die weniger als 24 Stunden vor dem Termin erfolgen, können eine Umbuchungsgebühr von 30 % verursachen. Umbuchungen unterliegen der Verfügbarkeit und können nicht für denselben Tag oder die gewünschte Zeit garantiert werden. Wiederholte kurzfristige Umbuchungen können eine Anzahlung oder Vorauszahlung für zukünftige Buchungen erfordern. Mitgliedschaftsvorteile wie kostenlose Umbuchungen gelten nur entsprechend den Bedingungen des gewählten Mitgliedschaftsplans.' },
+      s4: { title: 'Anzahlung & Vorauszahlung', body: 'Für bestimmte Buchungen kann Elea eine Anzahlung oder Teilzahlung vor der Bestätigung des Termins verlangen. Wenn eine erforderliche Anzahlung geleistet wurde, kann jede anfallende Storno- oder Umbuchungsgebühr von der Anzahlung abgezogen werden.' },
+      s5: { title: 'Verspätete Ankunft', body: 'Kunden werden erwartet, den Zugang zur Immobilie zum vereinbarten Terminzeitpunkt bereitzustellen. Wenn unser Team warten muss, weil kein Zugang verfügbar ist, kann der Termin verkürzt oder eine zusätzliche Wartegebühr anfallen. Wenn die Verspätung den geplanten Service erheblich beeinträchtigt, behält Elea das Recht vor, den Termin umzubuchen.' },
+      s6: { title: 'Wichtig', body: 'Mit der Buchung eines Elea-Service bestätigt der Kunde diese Storno- und Umbuchungsbedingungen. Elea behält sich das Recht vor, in echten Notfällen oder außergewöhnlichen Umständen angemessene Ausnahmen zu machen.' }
     },
     impressum: {
       eyebrow: 'Rechtliches',
@@ -631,8 +1295,23 @@ const translations = {
       s4: { title: '4. Ihre Rechte', body: 'Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung Ihrer personenbezogenen Daten.' }
     },
     legalPages: { impressum: 'Impressum', datenschutz: 'Datenschutz', terms: 'AGB', cancellation: 'Buchung & Stornierung' },
-    auth: { login: { title: 'Willkommen zurück', subtitle: 'Melden Sie sich bei Ihrem Konto an', footer: 'Sie haben noch kein Konto?', create: 'Erstellen Sie eines', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', forgot: 'Passwort vergessen?', submitLabel: 'Anmelden', loading: 'Anmeldung...' }, register: { title: 'Konto erstellen', subtitle: 'Registrieren Sie sich, um loszulegen', footer: 'Sie haben bereits ein Konto?', login: 'Anmelden', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', confirm: 'Passwort bestätigen', submitLabel: 'Konto erstellen', loading: 'Erstellen...' }, verify: { title: 'E-Mail verifizieren', subtitle: 'Wir haben einen Code an', resend: 'Erneut senden', verify: 'Verifizieren', verifying: 'Verifizieren...' }, forgot: { title: 'Passwort vergessen?', subtitle: 'Wir senden Ihnen einen Link zum Zurücksetzen', submit: 'Link senden', email: 'E-Mail', success: 'Wenn ein Konto für diese E-Mail existiert, haben wir einen Link zum Zurücksetzen gesendet.' }, reset: { title: 'Passwort zurücksetzen', subtitle: 'Wählen Sie ein neues Passwort', new: 'Neues Passwort', confirm: 'Passwort bestätigen', submit: 'Passwort zurücksetzen' } },
-    admin: { bookings: 'Buchungen', reviews: 'Bewertungen', settings: 'Einstellungen' },
+    auth: { topText: 'Anmelden', topBtn: 'Einloggen', logout: 'Abmelden', login: { title: 'Willkommen zurück', subtitle: 'Melden Sie sich bei Ihrem Konto an', footer: 'Sie haben noch kein Konto?', create: 'Erstellen Sie eines', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', forgot: 'Passwort vergessen?', submitLabel: 'Anmelden', loading: 'Anmeldung...' }, register: { title: 'Konto erstellen', subtitle: 'Registrieren Sie sich, um loszulegen', footer: 'Sie haben bereits ein Konto?', login: 'Anmelden', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', confirm: 'Passwort bestätigen', submitLabel: 'Konto erstellen', loading: 'Erstellen...' }, verify: { title: 'E-Mail verifizieren', subtitle: 'Wir haben einen Code an', resend: 'Erneut senden', verify: 'Verifizieren', verifying: 'Verifizieren...' }, forgot: { title: 'Passwort vergessen?', subtitle: 'Wir senden Ihnen einen Link zum Zurücksetzen', submit: 'Link senden', email: 'E-Mail', success: 'Wenn ein Konto für diese E-Mail existiert, haben wir einen Link zum Zurücksetzen gesendet.' }, reset: { title: 'Passwort zurücksetzen', subtitle: 'Wählen Sie ein neues Passwort', new: 'Neues Passwort', confirm: 'Passwort bestätigen', submit: 'Passwort zurücksetzen' } },
+    admin: { title: 'Admin — Mitglieder aktivieren', subtitle: 'Liste der Benutzer, die auf Aktivierung warten', bookings: 'Buchungen', reviews: 'Bewertungen', settings: 'Einstellungen' },
+    membership: {
+      eyebrow: 'Werden Sie Mitglied',
+      heading: 'Wählen Sie Ihren Mitgliedschaftsplan',
+      body: 'Wählen Sie einen Plan aus, zahlen Sie per WhatsApp und erstellen Sie danach Ihr Konto.',
+      cta: 'Mitglied werden',
+      plans: {
+        basic: { label: 'Basic', title: 'Basic', price: '€49 / Monat', f1: 'Priorisierte Buchung', f2: 'Mitgliederaktionen nur für Mitglieder', f3: 'Früher Zugang zu Sonderangeboten', f4: 'Flexible Buchungsoptionen', f5: 'Kostenlose Reinigungsberatung', f6: 'Sonderangebot im Geburtstagsmonat', f7: '5 % Rabatt auf Dienstleistungen für 3 Monate' },
+        premium: { label: 'Premium', title: 'Premium', price: '€99 / Monat', f1: 'Alles aus dem Basic-Membership', f2: 'Höhere Buchungspriorität', f3: 'Exklusive Mitgliedervorteile', f4: 'Früher Zugang zu Aktionen', f5: '1 kostenlose Beratung pro Monat', f6: 'Sonderkonditionen auf ausgewählte Leistungen', f7: '1 kostenloses kleines Add-on pro Monat', f8: 'Flexible Umbuchungen', f9: '5 % Rabatt auf Dienstleistungen für 6 Monate' },
+        vip: { label: 'VIP', title: 'VIP', price: '€199 / Monat', f1: 'Alles aus dem Premium-Membership', f2: 'Höchste Buchungspriorität', f3: 'Exklusive VIP-Aktionen', f4: 'Früher Zugang zu neuen Services und Angeboten', f5: 'Kostenlose Beratungen', f6: 'Sonderkonditionen auf Premium- und Zusatzleistungen', f7: 'Priorität in Stoßzeiten', f8: '1 kostenloses kleines Add-on pro Monat', f9: 'Premium-Referral-Belohnungen', f10: '5 % Rabatt auf Dienstleistungen für 12 Monate' }
+      },
+      paymentTitle: 'Zahlung abschließen',
+      paymentIntro: 'Um Ihre Mitgliedschaft abzuschließen, folgen Sie bitte den Anweisungen unten und zahlen Sie per WhatsApp. Nach Zahlung erhalten Sie eine Kontonummer; Elea aktiviert Ihr Konto manuell im Admin-Bereich.',
+      selected: 'Ausgewählter Plan:',
+      dashboardTitle: 'Ihr Dashboard'
+    },
     common: { continue: 'Weiter', back: 'Zurück', save: 'Speichern', close: 'Schließen' },
     errors: {
       supabaseUnavailable: 'Supabase-Client ist nicht verfügbar.',
@@ -655,6 +1334,12 @@ const translations = {
     }
   }
 };
+
+const BERLIN_LOCATION_OPTIONS = [
+  'Mitte', 'Moabit', 'Wedding', 'Tiergarten', 'Hansaviertel', 'Friedrichshain', 'Kreuzberg', 'Neukölln', 'Tempelhof', 'Schöneberg', 'Friedenau', 'Steglitz', 'Zehlendorf', 'Charlottenburg', 'Wilmersdorf', 'Spandau', 'Reinickendorf', 'Pankow', 'Prenzlauer Berg', 'Weißensee', 'Lichtenberg', 'Falkensee', 'Marzahn', 'Hellersdorf', 'Treptow', 'Köpenick', 'Biesdorf', 'Grunewald', 'Gatow', 'Nikolassee', 'Lichterfelde', 'Tegel', 'Buch', 'Karow', 'Blankenburg', 'Mahlsdorf', 'Wittenau', 'Britz', 'Gropiusstadt', 'Baumschulenweg', 'Johannisthal', 'Adlershof', 'Plänterwald', 'Rummelsburg', 'Fennpfuhl', 'Rudow', 'Altglienicke', 'Neu-Hohenschönhausen'
+];
+
+const BOOKING_HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => `${String(hour).padStart(2, '0')}:00`);
 
 const serviceData = [
   { key: 'Home Cleaning', titleKey: 'services.s1.title', title: 'Hausreinigung', desc: 'Umfassende Reinigung Ihres gesamten Zuhauses — Badezimmer, Küche, Wohnräume und Schlafzimmer, mit redaktioneller Präzision.' },
@@ -805,6 +1490,12 @@ function applyTranslations() {
   document.querySelectorAll('[data-lang-toggle]').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.langToggle === getLang());
   });
+
+  const guestModal = document.querySelector('.guest-book-modal');
+  if (guestModal) {
+    syncGuestBookingChoiceLanguage(guestModal);
+  }
+
   // Booking modal / review modal re-render on language change so injected markup translates too
   const modal = document.getElementById('booking-modal');
   if (modal && modal.classList.contains('open') && modal.bookingState) {
@@ -858,7 +1549,14 @@ function initNavbar() {
   });
 
   document.querySelectorAll('.navbar-book, [data-book-btn]').forEach((button) => {
-    button.addEventListener('click', () => openBookingModal());
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      const service = button.closest('[data-service]')?.getAttribute('data-service') || button.dataset.service || '';
+      if (service) {
+        localStorage.setItem('elea-intended-service', service);
+      }
+      showGuestBookingChoice(button.getAttribute('href') || service || null);
+    });
   });
 
   const mobileToggle = document.querySelector('[data-mobile-toggle]');
@@ -1180,20 +1878,20 @@ function renderBookingModal() {
       try { btn.disabled = true; btn.classList.add('disabled'); btn.textContent = t('errors.submitting'); } catch (e) { /* ignore */ }
     });
   }
-  modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal);
-  modal.querySelector('[data-booking-back]')?.addEventListener('click', () => {
-    if (state.step > 0) {
-      state.step -= 1;
-      renderBookingModal();
+  // attach a single delegated click handler to the modal so handlers persist across re-renders
+  if (modal._bookingHandler) modal.removeEventListener('click', modal._bookingHandler);
+  modal._bookingHandler = function (ev) {
+    const tgt = ev.target;
+    const closest = (sel) => (tgt.closest ? tgt.closest(sel) : null);
+    if (closest('[data-booking-close]')) { closeBookingModal(); return; }
+    if (closest('[data-booking-back]')) { if (state.step > 0) { state.step -= 1; renderBookingModal(); } return; }
+    if (closest('[data-booking-next]')) {
+      if (validateStep(state)) { state.step += 1; renderBookingModal(); }
+      return;
     }
-  });
-  modal.querySelector('[data-booking-next]')?.addEventListener('click', () => {
-    if (validateStep(state)) {
-      state.step += 1;
-      renderBookingModal();
-    }
-  });
-  modal.querySelector('[data-booking-submit]')?.addEventListener('click', () => submitBookingModal());
+    if (closest('[data-booking-submit]')) { submitBookingModal(); return; }
+  };
+  modal.addEventListener('click', modal._bookingHandler);
 
   if (state.step === 0) {
     const buttons = modal.querySelectorAll('[data-service-select]');
@@ -1396,10 +2094,10 @@ function renderBookingStep(state) {
         </div>
         <div class="booking-detail-field">
           <label>${t('booking.street')}</label>
-          <select id="booking-street" class="elea-input booking-location-select">
-            <option value="">${t('booking.street')}</option>
-            ${(Array.isArray(t('booking.streetOptions')) ? t('booking.streetOptions') : []).map((option) => `<option value="${option}" ${state.details.street === option ? 'selected' : ''}>${option}</option>`).join('')}
-          </select>
+          <input id="booking-street" class="elea-input booking-location-input" list="booking-street-options" value="${state.details.street || ''}" placeholder="${t('booking.street')}" autocomplete="street-address" />
+          <datalist id="booking-street-options">
+            ${(Array.isArray(t('booking.streetOptions')) ? t('booking.streetOptions') : []).map((option) => `<option value="${escapeHtml(option)}"></option>`).join('')}
+          </datalist>
         </div>
         <div class="booking-detail-field">
           <label>${t('booking.location')}</label>
@@ -1640,11 +2338,18 @@ function renderBookingModal() {
   const closeButton = '<button class="booking-close" data-booking-close aria-label="Close"><i data-lucide="x"></i></button>';
   if (state.delivered || state.deliveryChoice) {
     const completed = state.delivered;
-    modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:100%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">${completed ? t('booking.successTitle') : t('booking.title')}</div>${closeButton}</div></header><div class="elea-container booking-body"><div class="booking-success"><div class="success-icon"><i data-lucide="${completed ? 'check' : 'send'}"></i></div><h2 class="elea-heading">${completed ? t('booking.successTitle') : t('booking.successBody')}</h2><p class="elea-body mt-4">${completed ? t('booking.successBody') : t('booking.deliveryHint') || 'Wählen Sie, wie Sie Ihre Anfrage senden möchten. Die Anfrage wird erst nach dem Senden per WhatsApp oder E-Mail an Elea übermittelt.'}</p><div class="success-reference-box"><div class="eyebrow">${t('booking.referenceLabel') || 'Referenz'}</div><div class="success-reference">${state.reference}</div></div>${completed ? '' : `<div class="success-actions"><button type="button" class="elea-button-primary" data-send-whatsapp><i data-lucide="message-circle"></i> ${t('booking.whatsappBtn') || 'Per WhatsApp senden'}</button><button type="button" class="elea-button-outline" data-send-email><i data-lucide="mail"></i> ${t('booking.emailBtn') || 'Per E-Mail senden'}</button></div>${state.serviceDetails.photoNames.length ? '<p class="elea-body mt-4 booking-photo-note">' + (t('booking.photoNote') || 'Ihre ausgewählten Foto-Dateinamen sind enthalten. Bitte fügen Sie diese vor dem Senden in WhatsApp oder Ihrer E-Mail-App an.') + '</p>' : ''}<button class="success-close" data-booking-review>${t('booking.back') || 'Zurück zur Überprüfung'}</button>`}</div></div>`;
-    lucide.createIcons(); modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal);
-    modal.querySelector('[data-booking-review]')?.addEventListener('click', () => { state.deliveryChoice = false; renderBookingModal(); });
-    modal.querySelector('[data-send-whatsapp]')?.addEventListener('click', () => sendBookingVia(state, 'whatsapp'));
-    modal.querySelector('[data-send-email]')?.addEventListener('click', () => sendBookingVia(state, 'email'));
+    modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:100%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">${completed ? getMembershipFormTitle() : getMembershipFormTitle()}</div>${closeButton}</div></header><div class="elea-container booking-body"><div class="booking-success"><div class="success-icon"><i data-lucide="${completed ? 'check' : 'send'}"></i></div><h2 class="elea-heading">${completed ? t('booking.successTitle') : t('booking.successBody')}</h2><p class="elea-body mt-4">${completed ? t('booking.successBody') : t('booking.deliveryHint') || 'Wählen Sie, wie Sie Ihre Anfrage senden möchten. Die Anfrage wird erst nach dem Senden per WhatsApp oder E-Mail an Elea übermittelt.'}</p><div class="success-reference-box"><div class="eyebrow">${t('booking.referenceLabel') || 'Referenz'}</div><div class="success-reference">${state.reference}</div></div>${completed ? '' : `<div class="success-actions"><button type="button" class="elea-button-primary" data-send-whatsapp><i data-lucide="message-circle"></i> ${t('booking.whatsappBtn') || 'Per WhatsApp senden'}</button><button type="button" class="elea-button-outline" data-send-email><i data-lucide="mail"></i> ${t('booking.emailBtn') || 'Per E-Mail senden'}</button></div>${state.serviceDetails.photoNames.length ? '<p class="elea-body mt-4 booking-photo-note">' + (t('booking.photoNote') || 'Ihre ausgewählten Foto-Dateinamen sind enthalten. Bitte fügen Sie diese vor dem Senden in WhatsApp oder Ihrer E-Mail-App an.') + '</p>' : ''}<button class="success-close" data-booking-review>${t('booking.back') || 'Zurück zur Überprüfung'}</button>`}</div></div>`;
+    lucide.createIcons();
+    if (modal._bookingHandler) modal.removeEventListener('click', modal._bookingHandler);
+    modal._bookingHandler = function (ev) {
+      const tgt = ev.target;
+      const closest = (sel) => (tgt.closest ? tgt.closest(sel) : null);
+      if (closest('[data-booking-close]')) { closeBookingModal(); return; }
+      if (closest('[data-booking-review]')) { state.deliveryChoice = false; renderBookingModal(); return; }
+      if (closest('[data-send-whatsapp]')) { sendBookingVia(state, 'whatsapp'); return; }
+      if (closest('[data-send-email]')) { sendBookingVia(state, 'email'); return; }
+    };
+    modal.addEventListener('click', modal._bookingHandler);
     return;
   }
   const stepLabels = Array.isArray(t('booking.stepLabels')) ? t('booking.stepLabels') : (Array.isArray(t('booking.steps')) ? t('booking.steps') : ['Service','Property','Details','Schedule','Contact & review']);
@@ -1774,18 +2479,39 @@ function renderBookingModal() {
   const state = modal.bookingState; const c = bookingUi(); const close = '<button class="booking-close" data-booking-close aria-label="Close"><i data-lucide="x"></i></button>';
   if (state.delivered) {
     modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:100%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">ELEA</div>${close}</div></header><div class="elea-container booking-body"><div class="booking-success"><div class="success-icon"><i data-lucide="check"></i></div><h2 class="elea-heading">${c.thanksTitle}</h2><p class="elea-body mt-4">${c.thanksBody}</p><div class="success-reference-box"><div class="eyebrow">Reference</div><div class="success-reference">${state.reference}</div></div><div class="booking-consultation"><h3>${c.consultationTitle}</h3><p>${c.consultationBody}</p><div class="success-actions"><button class="elea-button-primary" data-consultation><i data-lucide="calendar"></i> ${c.consultationYes}</button><button class="success-close" data-booking-close>${c.consultationNo}</button></div></div></div></div>`;
-    lucide.createIcons(); modal.querySelectorAll('[data-booking-close]').forEach(button => button.addEventListener('click', closeBookingModal)); modal.querySelector('[data-consultation]')?.addEventListener('click', () => requestConsultation(state)); return;
+    lucide.createIcons();
+    if (modal._bookingHandler) modal.removeEventListener('click', modal._bookingHandler);
+    modal._bookingHandler = function (ev) { const t = ev.target; if (t.closest && t.closest('[data-booking-close]')) { closeBookingModal(); return; } if (t.closest && t.closest('[data-consultation]')) { requestConsultation(state); return; } };
+    modal.addEventListener('click', modal._bookingHandler);
+    return;
   }
   if (state.estimateReview) {
     modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:100%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">ELEA</div>${close}</div></header><div class="elea-container booking-body"><div class="booking-estimate-panel"><span class="booking-kicker">NEXT STEP</span><h2 class="elea-heading">${c.estimateTitle}</h2><p class="elea-body">${c.estimateBody}</p><div class="booking-policy-grid"><section><h3>${c.paymentTitle}</h3><p>${c.paymentBody}</p></section><section><h3>${c.scopeTitle}</h3><p>${c.scopeBody}</p></section></div><a class="booking-policy-link" href="cancellation.html" target="_blank" rel="noreferrer"><i data-lucide="external-link"></i> ${c.policy}</a><div class="booking-actions"><button class="booking-back" data-estimate-back><i data-lucide="arrow-left"></i> ${c.back}</button><button class="booking-submit-button" data-estimate-send>${c.send} <i data-lucide="arrow-right"></i></button></div></div></div>`;
-    lucide.createIcons(); modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal); modal.querySelector('[data-estimate-back]')?.addEventListener('click', () => { state.estimateReview = false; renderBookingModal(); }); modal.querySelector('[data-estimate-send]')?.addEventListener('click', () => { state.deliveryChoice = true; state.estimateReview = false; renderBookingModal(); }); return;
+    lucide.createIcons();
+    if (modal._bookingHandler) modal.removeEventListener('click', modal._bookingHandler);
+    modal._bookingHandler = function (ev) { const t = ev.target; if (t.closest && t.closest('[data-booking-close]')) { closeBookingModal(); return; } if (t.closest && t.closest('[data-estimate-back]')) { state.estimateReview = false; renderBookingModal(); return; } if (t.closest && t.closest('[data-estimate-send]')) { state.deliveryChoice = true; state.estimateReview = false; renderBookingModal(); return; } };
+    modal.addEventListener('click', modal._bookingHandler);
+    return;
   }
   if (state.deliveryChoice) {
     modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:100%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">ELEA</div>${close}</div></header><div class="elea-container booking-body"><div class="booking-success"><div class="success-icon"><i data-lucide="send"></i></div><h2 class="elea-heading">${c.readyTitle}</h2><p class="elea-body mt-4">${c.readyBody}</p><div class="success-reference-box"><div class="eyebrow">Reference</div><div class="success-reference">${state.reference}</div></div><div class="success-actions"><button class="elea-button-primary" data-send-whatsapp><i data-lucide="message-circle"></i> ${c.whatsapp}</button><button class="elea-button-outline" data-send-email><i data-lucide="mail"></i> ${c.email}</button></div>${state.serviceDetails.photoNames.length ? '<p class="elea-body mt-4 booking-photo-note">Please attach the selected photos in WhatsApp or your email app before sending.</p>' : ''}</div></div>`;
-    lucide.createIcons(); modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal); modal.querySelector('[data-send-whatsapp]')?.addEventListener('click', () => sendBookingVia(state, 'whatsapp')); modal.querySelector('[data-send-email]')?.addEventListener('click', () => sendBookingVia(state, 'email')); return;
+    lucide.createIcons();
+    if (modal._bookingHandler) modal.removeEventListener('click', modal._bookingHandler);
+    modal._bookingHandler = function (ev) { const t = ev.target; if (t.closest && t.closest('[data-booking-close]')) { closeBookingModal(); return; } if (t.closest && t.closest('[data-send-whatsapp]')) { sendBookingVia(state, 'whatsapp'); return; } if (t.closest && t.closest('[data-send-email]')) { sendBookingVia(state, 'email'); return; } };
+    modal.addEventListener('click', modal._bookingHandler);
+    return;
   }
-  modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:${((state.step + 1) / 5) * 100}%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">${t('booking.title')}</div>${close}</div></header><div class="elea-container booking-body"><div class="booking-step-labels">${c.steps.map((label, index) => `<span class="${index === state.step ? 'active' : ''}">${String(index + 1).padStart(2, '0')} ${label}</span>`).join('')}</div><div class="booking-step-panel">${renderBookingStep(state)}</div><div class="booking-actions"><button class="booking-back ${state.step ? '' : 'disabled'}" ${state.step ? '' : 'disabled'} data-booking-back><i data-lucide="arrow-left"></i> ${c.back}</button><button type="button" class="booking-submit-button" data-booking-next>${state.step === 4 ? c.send : c.continue} <i data-lucide="arrow-right"></i></button></div><div class="booking-error ${state.errors.general ? 'show' : ''}">${state.errors.general || ''}</div></div>`;
-  lucide.createIcons(); modal.querySelector('[data-booking-close]')?.addEventListener('click', closeBookingModal); modal.querySelector('[data-booking-back]')?.addEventListener('click', () => { state.step--; renderBookingModal(); }); modal.querySelector('[data-booking-next]')?.addEventListener('click', () => { syncContactDetails(modal, state); if (!validateStep(state)) { renderBookingModal(); return; } if (state.step === 4) { submitBookingModal(); } else { state.step++; renderBookingModal(); } });
+  modal.innerHTML = `<div class="booking-progress"><div class="booking-progress-fill" style="width:${((state.step + 1) / 5) * 100}%"></div></div><header class="booking-header"><div class="elea-container booking-header-inner"><div class="booking-title">${getMembershipFormTitle()}</div>${close}</div></header><div class="elea-container booking-body"><div class="booking-step-labels">${c.steps.map((label, index) => `<span class="${index === state.step ? 'active' : ''}">${String(index + 1).padStart(2, '0')} ${label}</span>`).join('')}</div><div class="booking-step-panel">${renderBookingStep(state)}</div><div class="booking-actions"><button class="booking-back ${state.step ? '' : 'disabled'}" ${state.step ? '' : 'disabled'} data-booking-back><i data-lucide="arrow-left"></i> ${c.back}</button><button type="button" class="booking-submit-button" data-booking-next>${state.step === 4 ? c.send : c.continue} <i data-lucide="arrow-right"></i></button></div><div class="booking-error ${state.errors.general ? 'show' : ''}">${state.errors.general || ''}</div></div>`;
+  lucide.createIcons();
+  if (modal._bookingHandler) modal.removeEventListener('click', modal._bookingHandler);
+  modal._bookingHandler = function (ev) {
+    const tgt = ev.target;
+    const closest = (sel) => (tgt.closest ? tgt.closest(sel) : null);
+    if (closest('[data-booking-close]')) { closeBookingModal(); return; }
+    if (closest('[data-booking-back]')) { state.step--; renderBookingModal(); return; }
+    if (closest('[data-booking-next]')) { syncContactDetails(modal, state); if (!validateStep(state)) { renderBookingModal(); return; } if (state.step === 4) { submitBookingModal(); } else { state.step++; renderBookingModal(); } return; }
+  };
+  modal.addEventListener('click', modal._bookingHandler);
   bindBookingStepEvents(modal, state);
 }
 

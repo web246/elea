@@ -44,7 +44,15 @@
   <body data-page="home">
     <div class="page min-h-screen flex flex-col bg-background">
       <header class="navbar" id="navbar">
-        <div class="elea-container navbar-inner">
+          <div class="nav-utility-row">
+            <div class="elea-container nav-utility-inner">
+              <div class="nav-utility-links" role="region" aria-label="Authentication shortcuts">
+                <a id="top-login-btn" href="login.html" data-i18n="auth.topText" class="nav-auth-button nav-login">Anmelden</a>
+                <a id="top-signup-btn" href="signup.html" data-i18n="auth.register.title" class="nav-auth-button nav-signup">Konto erstellen</a>
+              </div>
+            </div>
+          </div>
+          <div class="elea-container navbar-inner">
           <a href="index.html" class="logo logo-dark" aria-label="ELEA home">
             <img class="site-logo logo-img" src="assets/best.png" alt="ELEA logo" />
           </a>
@@ -115,6 +123,61 @@
             </div>
           </div>
           <div class="hero-manifesto" data-i18n="hero.manifesto">Ihr Zuhause, liebevoll betreut.</div>
+        </section>
+
+        <!-- Membership CTA -->
+        <section id="membership-cta" class="elea-section section scroll-reveal">
+          <div class="elea-container">
+            <div class="mb-8 membership-header">
+              <div class="elea-eyebrow" data-i18n="membership.eyebrow">Werden Sie Mitglied</div>
+              <h2 class="elea-heading mt-4" data-i18n="membership.heading">Wählen Sie Ihren Mitgliedschaftsplan</h2>
+              <p class="elea-body mt-4" data-i18n="membership.body">Wählen Sie einen Plan aus, zahlen Sie per WhatsApp und erstellen Sie danach Ihr Konto.</p>
+            </div>
+            <div class="membership-grid">
+              <button class="plan-card plan-basic" data-plan="basic" type="button">
+                <div class="plan-card-header">
+                  <span class="plan-tier" data-i18n="membership.plans.basic.label">Basic</span>
+                  <span class="plan-price" data-i18n="membership.plans.basic.price">€49 / Monat</span>
+                </div>
+                <div class="plan-title" data-i18n="membership.plans.basic.title">Basic</div>
+                <ul class="plan-features">
+                  <li data-i18n="membership.plans.basic.f1">Priorisierte Buchung</li>
+                  <li data-i18n="membership.plans.basic.f2">Mitgliederangebote &amp; Rabatte</li>
+                  <li data-i18n="membership.plans.basic.f3">Flexible Buchungsoptionen</li>
+                  <li data-i18n="membership.plans.basic.f4">Kostenlose Reinigungsberatung</li>
+                </ul>
+              </button>
+              <button class="plan-card plan-premium is-featured" data-plan="premium" type="button">
+                <div class="plan-card-header">
+                  <span class="plan-tier" data-i18n="membership.plans.premium.label">Premium</span>
+                  <span class="plan-price" data-i18n="membership.plans.premium.price">€99 / Monat</span>
+                </div>
+                <div class="plan-title" data-i18n="membership.plans.premium.title">Premium</div>
+                <ul class="plan-features">
+                  <li data-i18n="membership.plans.premium.f1">Alles aus Basic</li>
+                  <li data-i18n="membership.plans.premium.f2">Höhere Buchungspriorität</li>
+                  <li data-i18n="membership.plans.premium.f3">Exklusive Mitgliedervorteile</li>
+                  <li data-i18n="membership.plans.premium.f4">1 kostenlose Beratung pro Monat</li>
+                </ul>
+              </button>
+              <button class="plan-card plan-vip is-featured" data-plan="vip" type="button">
+                <div class="plan-card-header">
+                  <span class="plan-tier" data-i18n="membership.plans.vip.label">VIP</span>
+                  <span class="plan-price" data-i18n="membership.plans.vip.price">€199 / Monat</span>
+                </div>
+                <div class="plan-title" data-i18n="membership.plans.vip.title">VIP</div>
+                <ul class="plan-features">
+                  <li data-i18n="membership.plans.vip.f1">Alles aus Premium</li>
+                  <li data-i18n="membership.plans.vip.f2">Höchste Buchungspriorität</li>
+                  <li data-i18n="membership.plans.vip.f3">Exklusive VIP-Angebote</li>
+                  <li data-i18n="membership.plans.vip.f4">Premium-Referral-Belohnungen</li>
+                </ul>
+              </button>
+            </div>
+            <div class="mt-6 membership-cta-row">
+              <a id="become-member-cta" href="signup.html" class="elea-button-primary" data-i18n="membership.cta">Mitglied werden</a>
+            </div>
+          </div>
         </section>
 
         <section class="elea-section section scroll-reveal">
