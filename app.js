@@ -562,7 +562,6 @@ function syncGuestBookingChoiceLanguage(modal) {
   const title = modal.querySelector('[data-guest-title]');
   const summary = modal.querySelector('[data-guest-summary]');
   const continueBtn = modal.querySelector('#guest-continue');
-  const signupBtn = modal.querySelector('#guest-signup');
   const loginBtn = modal.querySelector('#guest-login');
 
   if (title) {
@@ -571,20 +570,16 @@ function syncGuestBookingChoiceLanguage(modal) {
 
   if (summary) {
     summary.textContent = isGerman
-      ? 'Sie können ohne Konto fortfahren oder sich anmelden/registrieren, um Mitgliedervorteile zu erhalten.'
-      : 'You can continue as a guest or sign up/log in to unlock member benefits.';
+      ? 'Sie können ohne Konto fortfahren oder sich anmelden, um Mitgliedervorteile zu erhalten.'
+      : 'You can continue as a guest or log in to unlock member benefits.';
   }
 
   if (continueBtn) {
     continueBtn.textContent = isGerman ? 'Weiter als Gast' : 'Continue as guest';
   }
 
-  if (signupBtn) {
-    signupBtn.textContent = isGerman ? 'Konto erstellen' : 'Create account';
-  }
-
   if (loginBtn) {
-    loginBtn.textContent = isGerman ? 'Anmelden' : 'Log in';
+    loginBtn.textContent = isGerman ? 'Anmelden' : 'Login';
   }
 }
 
@@ -607,11 +602,10 @@ function showGuestBookingChoice(href) {
         <button type="button" class="guest-book-close-btn" aria-label="Close guest booking choice">&times;</button>
       </div>
       <div class="guest-book-body">
-        <p data-guest-summary>Sie können ohne Konto fortfahren oder sich anmelden/registrieren, um Mitgliedervorteile zu erhalten.</p>
+        <p data-guest-summary>Sie können ohne Konto fortfahren oder sich anmelden, um Mitgliedervorteile zu erhalten.</p>
         <div class="guest-actions">
           <button class="elea-button-outline" id="guest-continue">Weiter als Gast</button>
-          <button class="elea-button-primary" id="guest-signup">Konto erstellen</button>
-          <button class="elea-link" id="guest-login">Anmelden</button>
+          <button class="elea-button-primary" id="guest-login">Anmelden</button>
         </div>
       </div>
     </div>
@@ -657,11 +651,6 @@ function showGuestBookingChoice(href) {
     } else {
       window.location.href = 'services.html';
     }
-  });
-  modal.querySelector('#guest-signup').addEventListener('click', () => {
-    // remember where the user intended to book so we can continue after signup/login
-    setIntended(href || '');
-    window.location.href = 'signup.html';
   });
   modal.querySelector('#guest-login').addEventListener('click', () => {
     setIntended(href || '');
@@ -1143,7 +1132,7 @@ const translations = {
       s4: { title: '4. Your rights', body: 'You have the right to access, rectify, erase and restrict processing of your personal data.' }
     },
     legalPages: { impressum: 'Impressum', datenschutz: 'Datenschutzerklärung', terms: 'Terms & Conditions', cancellation: 'Booking & Cancellation' },
-    auth: { topText: 'Sign in', topBtn: 'Sign in', logout: 'Log out', login: { title: 'Welcome back', subtitle: 'Log in to your account', footer: 'Don\'t have an account?', create: 'Create one', or: 'or', g: 'Continue with Google', email: 'Email', password: 'Password', forgot: 'Forgot password?', submitLabel: 'Log in', loading: 'Logging in...' }, register: { title: 'Create your account', subtitle: 'Sign up to get started', footer: 'Already have an account?', login: 'Log in', or: 'or', g: 'Continue with Google', email: 'Email', password: 'Password', confirm: 'Confirm Password', submitLabel: 'Create account', loading: 'Creating account...' }, verify: { title: 'Verify your email', subtitle: 'We sent a code to', resend: 'Resend', verify: 'Verify', verifying: 'Verifying...' }, forgot: { title: 'Forgot your password?', subtitle: 'We\'ll send a reset link to your email', submit: 'Send reset link', email: 'Email', success: 'If an account exists for that email, we\'ve sent a reset link.' }, reset: { title: 'Reset your password', subtitle: 'Choose a new password', new: 'New password', confirm: 'Confirm password', submit: 'Reset password' } },
+    auth: { topText: 'Login', topBtn: 'Login', logout: 'Log out', login: { title: 'Welcome back', subtitle: 'Log in to your account', footer: 'Don\'t have an account?', create: 'Create one', or: 'or', g: 'Continue with Google', email: 'Email', password: 'Password', forgot: 'Forgot password?', submitLabel: 'Log in', loading: 'Logging in...' }, register: { title: 'Create your account', subtitle: 'Sign up to get started', footer: 'Already have an account?', login: 'Log in', or: 'or', g: 'Continue with Google', email: 'Email', password: 'Password', confirm: 'Confirm Password', submitLabel: 'Create account', loading: 'Creating account...' }, verify: { title: 'Verify your email', subtitle: 'We sent a code to', resend: 'Resend', verify: 'Verify', verifying: 'Verifying...' }, forgot: { title: 'Forgot your password?', subtitle: 'We\'ll send a reset link to your email', submit: 'Send reset link', email: 'Email', success: 'If an account exists for that email, we\'ve sent a reset link.' }, reset: { title: 'Reset your password', subtitle: 'Choose a new password', new: 'New password', confirm: 'Confirm password', submit: 'Reset password' } },
     admin: { title: 'Admin — Activate Members', subtitle: 'List of users pending activation', bookings: 'Bookings', reviews: 'Reviews', settings: 'Settings' },
     membership: {
       eyebrow: 'Become an Elea Member',
@@ -1295,7 +1284,7 @@ const translations = {
       s4: { title: '4. Ihre Rechte', body: 'Sie haben das Recht auf Auskunft, Berichtigung, Löschung und Einschränkung der Verarbeitung Ihrer personenbezogenen Daten.' }
     },
     legalPages: { impressum: 'Impressum', datenschutz: 'Datenschutz', terms: 'AGB', cancellation: 'Buchung & Stornierung' },
-    auth: { topText: 'Anmelden', topBtn: 'Einloggen', logout: 'Abmelden', login: { title: 'Willkommen zurück', subtitle: 'Melden Sie sich bei Ihrem Konto an', footer: 'Sie haben noch kein Konto?', create: 'Erstellen Sie eines', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', forgot: 'Passwort vergessen?', submitLabel: 'Anmelden', loading: 'Anmeldung...' }, register: { title: 'Konto erstellen', subtitle: 'Registrieren Sie sich, um loszulegen', footer: 'Sie haben bereits ein Konto?', login: 'Anmelden', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', confirm: 'Passwort bestätigen', submitLabel: 'Konto erstellen', loading: 'Erstellen...' }, verify: { title: 'E-Mail verifizieren', subtitle: 'Wir haben einen Code an', resend: 'Erneut senden', verify: 'Verifizieren', verifying: 'Verifizieren...' }, forgot: { title: 'Passwort vergessen?', subtitle: 'Wir senden Ihnen einen Link zum Zurücksetzen', submit: 'Link senden', email: 'E-Mail', success: 'Wenn ein Konto für diese E-Mail existiert, haben wir einen Link zum Zurücksetzen gesendet.' }, reset: { title: 'Passwort zurücksetzen', subtitle: 'Wählen Sie ein neues Passwort', new: 'Neues Passwort', confirm: 'Passwort bestätigen', submit: 'Passwort zurücksetzen' } },
+    auth: { topText: 'Login', topBtn: 'Login', logout: 'Abmelden', login: { title: 'Willkommen zurück', subtitle: 'Melden Sie sich bei Ihrem Konto an', footer: 'Sie haben noch kein Konto?', create: 'Erstellen Sie eines', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', forgot: 'Passwort vergessen?', submitLabel: 'Anmelden', loading: 'Anmeldung...' }, register: { title: 'Konto erstellen', subtitle: 'Registrieren Sie sich, um loszulegen', footer: 'Sie haben bereits ein Konto?', login: 'Anmelden', or: 'oder', g: 'Mit Google fortfahren', email: 'E-Mail', password: 'Passwort', confirm: 'Passwort bestätigen', submitLabel: 'Konto erstellen', loading: 'Erstellen...' }, verify: { title: 'E-Mail verifizieren', subtitle: 'Wir haben einen Code an', resend: 'Erneut senden', verify: 'Verifizieren', verifying: 'Verifizieren...' }, forgot: { title: 'Passwort vergessen?', subtitle: 'Wir senden Ihnen einen Link zum Zurücksetzen', submit: 'Link senden', email: 'E-Mail', success: 'Wenn ein Konto für diese E-Mail existiert, haben wir einen Link zum Zurücksetzen gesendet.' }, reset: { title: 'Passwort zurücksetzen', subtitle: 'Wählen Sie ein neues Passwort', new: 'Neues Passwort', confirm: 'Passwort bestätigen', submit: 'Passwort zurücksetzen' } },
     admin: { title: 'Admin — Mitglieder aktivieren', subtitle: 'Liste der Benutzer, die auf Aktivierung warten', bookings: 'Buchungen', reviews: 'Bewertungen', settings: 'Einstellungen' },
     membership: {
       eyebrow: 'Werden Sie Mitglied',
