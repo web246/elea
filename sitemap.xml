@@ -1,20 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <!-- Replace https://your-domain.com with your real site URL before uploading -->
   <url>
-    <loc>https://your-domain.com/</loc>
+    <loc>https://eleacleaning.de/</loc>
     <priority>1.00</priority>
   </url>
-  <url><loc>https://your-domain.com/about.html</loc><priority>0.80</priority></url>
-  <url><loc>https://your-domain.com/services.html</loc><priority>0.80</priority></url>
-  <url><loc>https://your-domain.com/promotions.html</loc><priority>0.64</priority></url>
-  <url><loc>https://your-domain.com/contact.html</loc><priority>0.64</priority></url>
-  <url><loc>https://your-domain.com/signup.html</loc><priority>0.50</priority></url>
-  <url><loc>https://your-domain.com/login.html</loc><priority>0.20</priority></url>
-  <url><loc>https://your-domain.com/payment.html</loc><priority>0.20</priority></url>
-  <url><loc>https://your-domain.com/special-services.html</loc><priority>0.50</priority></url>
-  <url><loc>https://your-domain.com/terms.html</loc><priority>0.10</priority></url>
-  <url><loc>https://your-domain.com/cancellation.html</loc><priority>0.10</priority></url>
-  <url><loc>https://your-domain.com/datenschutz.html</loc><priority>0.10</priority></url>
-  <url><loc>https://your-domain.com/impressum.html</loc><priority>0.10</priority></url>
+  <url><loc>https://eleacleaning.de/about.html</loc><priority>0.80</priority></url>
+  <url><loc>https://eleacleaning.de/services.html</loc><priority>0.80</priority></url>
+  <url><loc>https://eleacleaning.de/promotions.html</loc><priority>0.64</priority></url>
+  <url><loc>https://eleacleaning.de/contact.html</loc><priority>0.64</priority></url>
+  <url><loc>https://eleacleaning.de/signup.html</loc><priority>0.50</priority></url>
+  <url><loc>https://eleacleaning.de/login.html</loc><priority>0.20</priority></url>
+  <url><loc>https://eleacleaning.de/payment.html</loc><priority>0.20</priority></url>
+  <url><loc>https://eleacleaning.de/special-services.html</loc><priority>0.50</priority></url>
+  <url><loc>https://eleacleaning.de/terms.html</loc><priority>0.10</priority></url>
+  <url><loc>https://eleacleaning.de/cancellation.html</loc><priority>0.10</priority></url>
+  <url><loc>https://eleacleaning.de/datenschutz.html</loc><priority>0.10</priority></url>
+  <url><loc>https://eleacleaning.de/impressum.html</loc><priority>0.10</priority></url>
 </urlset>
