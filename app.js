@@ -498,6 +498,106 @@ function getPlanBenefits(plan) {
   return PLAN_BENEFITS[safePlan] || PLAN_BENEFITS.basic;
 }
 
+function getPaidMemberUsers() {
+  return getUsers().filter((user) => {
+    const membership = String(user?.membership || '').toLowerCase();
+    return user && user.active !== false && ['basic', 'premium', 'vip'].includes(membership);
+  });
+}
+
+function getMemberNotificationKey(userId) {
+  return `elea-member-notifications-${String(userId || 'guest')}`;
+}
+
+function getMemberNotifications(userId) {
+  if (!userId) return [];
+  try {
+    const raw = localStorage.getItem(getMemberNotificationKey(userId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function addMemberNotification(userId, notification) {
+  if (!userId) return null;
+  const key = getMemberNotificationKey(userId);
+  const notifications = getMemberNotifications(userId);
+  const nextItem = {
+    id: `notif-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    title: notification?.title || 'Elea update',
+    message: notification?.message || '',
+    link: notification?.link || '',
+    type: notification?.type || 'notification',
+    plan: notification?.plan || 'all-members',
+    createdAt: notification?.createdAt || new Date().toISOString()
+  };
+  notifications.unshift(nextItem);
+  localStorage.setItem(key, JSON.stringify(notifications.slice(0, 30)));
+  return nextItem;
+}
+
+function sendMembershipNotification(plan, payload) {
+  const targetPlan = plan === 'all-members' ? 'all-members' : ['basic', 'premium', 'vip'].includes(plan) ? plan : 'all-members';
+  const recipients = targetPlan === 'all-members'
+    ? getPaidMemberUsers()
+    : getPaidMemberUsers().filter((user) => String(user.membership || '').toLowerCase() === targetPlan);
+
+  const notification = {
+    title: payload?.title || 'Elea update',
+    message: payload?.message || '',
+    link: payload?.link || '',
+    type: payload?.type || 'notification',
+    plan: targetPlan,
+    createdAt: new Date().toISOString()
+  };
+
+  recipients.forEach((user) => addMemberNotification(user.id, notification));
+  return {
+    sent: recipients.length,
+    plan: targetPlan,
+    recipients: recipients.map((user) => ({ id: user.id, email: user.email, membership: user.membership }))
+  };
+}
+
+function renderMemberNotifications() {
+  const currentUser = getCurrentUser();
+  const bell = document.getElementById('member-notification-bell');
+  const countNode = document.getElementById('member-notification-count');
+  const panel = document.getElementById('member-notification-panel');
+  const listNode = document.getElementById('member-notification-list');
+
+  if (!bell || !countNode || !panel || !listNode) return;
+
+  const notifications = currentUser ? getMemberNotifications(currentUser.id) : [];
+  const total = notifications.length;
+  countNode.textContent = String(total);
+  countNode.style.display = total > 0 ? 'inline-flex' : 'none';
+
+  if (!notifications.length) {
+    listNode.innerHTML = '<div class="notification-empty">No notifications yet.</div>';
+  } else {
+    listNode.innerHTML = notifications.map((item) => `
+      <div class="notification-item">
+        <strong>${escapeHtml(item.title || 'Elea update')}</strong>
+        <p>${escapeHtml(item.message || '')}</p>
+        ${item.link ? `<a href="${escapeHtml(item.link)}" target="_blank" rel="noreferrer" style="display:inline-block; margin-top:0.45rem; color:#0f3d34; font-weight:600; text-decoration:underline;">Open</a>` : ''}
+        <small>${new Date(item.createdAt || Date.now()).toLocaleString()}</small>
+      </div>
+    `).join('');
+  }
+
+  bell.onclick = () => panel.classList.toggle('hidden');
+  document.onclick = function (event) {
+    const clickedBell = bell.contains(event.target);
+    const clickedPanel = panel.contains(event.target);
+    if (!clickedBell && !clickedPanel) {
+      panel.classList.add('hidden');
+    }
+  };
+}
+
 function renderSpecialServicesPage() {
   const container = document.getElementById('special-services-content');
   if (!container) return;
@@ -555,6 +655,8 @@ function renderSpecialServicesPage() {
       }
     });
   });
+
+  renderMemberNotifications();
 }
 
 function syncGuestBookingChoiceLanguage(modal) {
@@ -2945,6 +3047,40 @@ function initAdminPage() {
     const statusNode = document.getElementById('admin-asset-status');
     if (statusNode) statusNode.textContent = '';
     renderAdminDashboard();
+  });
+
+  const notifyForm = document.getElementById('admin-notification-form');
+  notifyForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const plan = notifyForm.notifyPlan?.value || 'all-members';
+    const type = notifyForm.notifyType?.value || 'notification';
+    const title = notifyForm.notifyTitle?.value.trim();
+    const message = notifyForm.notifyMessage?.value.trim();
+    const link = notifyForm.notifyLink?.value.trim();
+    const statusNode = document.getElementById('admin-notify-status');
+
+    if (!title || !message) {
+      if (statusNode) {
+        statusNode.textContent = 'Please add both a title and message before sending.';
+        statusNode.style.color = '#f8b4b4';
+      }
+      return;
+    }
+
+    const result = sendMembershipNotification(plan, {
+      title,
+      message,
+      link: link || 'https://wa.me/4915216019843',
+      type,
+      plan
+    });
+
+    if (statusNode) {
+      statusNode.textContent = `Sent to ${result.sent} paid ${plan === 'all-members' ? 'member(s)' : `${plan} member(s)`}.`;
+      statusNode.style.color = '#d9f6cb';
+    }
+
+    notifyForm.reset();
   });
 
   const ctaForm = document.getElementById('admin-cta-form');

@@ -691,7 +691,48 @@
         </section>
 
         <section data-admin-section="promos" class="admin-section hidden">
-          <form id="admin-cta-form" class="admin-card" autocomplete="off">
+          <form id="admin-notification-form" class="admin-card" autocomplete="off">
+            <div class="admin-form-grid">
+              <div class="admin-field">
+                <label for="admin-notify-plan">Send to plan</label>
+                <select id="admin-notify-plan" name="notifyPlan">
+                  <option value="all-members">All paid members</option>
+                  <option value="basic">Basic</option>
+                  <option value="premium">Premium</option>
+                  <option value="vip">VIP</option>
+                </select>
+              </div>
+              <div class="admin-field">
+                <label for="admin-notify-type">Message type</label>
+                <select id="admin-notify-type" name="notifyType">
+                  <option value="promo">Promo</option>
+                  <option value="notification">Notification</option>
+                </select>
+              </div>
+            </div>
+            <div class="admin-form-grid" style="margin-top:1rem;">
+              <div class="admin-field">
+                <label for="admin-notify-title">Title</label>
+                <input id="admin-notify-title" name="notifyTitle" type="text" placeholder="Spring cleanup offer" />
+              </div>
+              <div class="admin-field">
+                <label for="admin-notify-link">Link</label>
+                <input id="admin-notify-link" name="notifyLink" type="url" placeholder="https://wa.me/4915216019843" />
+              </div>
+            </div>
+            <div class="admin-form-grid" style="margin-top:1rem;">
+              <div class="admin-field" style="grid-column:1 / -1;">
+                <label for="admin-notify-message">Message</label>
+                <textarea id="admin-notify-message" name="notifyMessage" placeholder="Your premium members get priority access to this month’s special cleaning offer."></textarea>
+              </div>
+            </div>
+            <div style="margin-top:1rem; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+              <div id="admin-notify-status" class="admin-asset-status" aria-live="polite"></div>
+              <button type="submit" class="elea-button-primary">Send message</button>
+            </div>
+          </form>
+
+          <form id="admin-cta-form" class="admin-card" autocomplete="off" style="margin-top:1rem;">
             <div class="admin-form-grid">
               <div class="admin-field">
                 <label for="admin-cta-title">Title</label>

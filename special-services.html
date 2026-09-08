@@ -30,6 +30,21 @@
         <a href="contact.html">Contact</a>
       </nav>
       <div class="header-actions">
+        <div class="notification-bell-wrap" aria-live="polite">
+          <button type="button" class="notification-bell" id="member-notification-bell" aria-label="Member notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"/>
+              <path d="M10 20a2 2 0 0 0 4 0"/>
+            </svg>
+            <span class="notification-badge" id="member-notification-count">0</span>
+          </button>
+          <div class="notification-panel hidden" id="member-notification-panel">
+            <div class="notification-panel-header">
+              <strong>Notifications</strong>
+            </div>
+            <div id="member-notification-list" class="notification-list"></div>
+          </div>
+        </div>
         <div class="lang-switch" role="group" aria-label="Language">
           <button type="button" class="lang-toggle-btn" data-lang-toggle="en" aria-pressed="true">EN</button>
           <span aria-hidden="true">|</span>
