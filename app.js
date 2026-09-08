@@ -10,6 +10,8 @@ const defaults = {
 };
 // Set this to the backend booking endpoint. Using localhost:4001 by default.
 defaults.bookingEndpoint = 'http://localhost:4001/api/bookings';
+// Admin proxy API key to include in requests to the admin proxy (if used)
+defaults.adminApiKey = '';
 
 // Ensure a safe stub for lucide icons so missing icon lib doesn't break flow
 try {
@@ -2145,76 +2147,133 @@ function submitBookingModal() {
     renderBookingModal();
     return;
   }
-  // generate a reference and attempt to POST booking to configured endpoint
+  // generate a reference and attempt to store booking via Supabase or configured endpoint
   state.reference = generateReference();
-  const payload = {
-    reference: state.reference,
-    services: state.selectedServices,
-    rooms: state.rooms,
-    areas: state.areas,
-    cleaningType: state.cleaningType,
-    date: state.date,
-    time: state.time,
-    details: state.details
-  };
-
   const endpoint = defaults.bookingEndpoint;
-    if (endpoint && endpoint.trim()) {
-      // optimistic UI: show loading state inside modal
-      state.loading = true;
-      renderBookingModal();
-      try {
-        const formData = new FormData();
-        formData.append('reference', state.reference || '');
-        // selected services as repeated fields
-        (state.selectedServices || []).forEach(s => formData.append('selectedServices[]', s));
-        formData.append('date', state.date || '');
-        formData.append('time', state.time || '');
-        // details
-        const details = state.details || {};
-        formData.append('fullName', details.fullName || '');
-        formData.append('email', details.email || '');
-        formData.append('phone', details.phone || '');
-        formData.append('street', details.street || '');
-        formData.append('location', details.location || '');
-        formData.append('address', details.address || '');
-        formData.append('notes', details.notes || '');
 
-        // attach files from file input if present
+  // If supabase helper is available, prefer Supabase storage + bookings table
+  if (window.eleaSupabase && window.eleaSupabase.client) {
+    state.loading = true;
+    renderBookingModal();
+    (async () => {
+      try {
+        const sb = window.eleaSupabase;
+        const details = state.details || {};
+        const imageFiles = [];
         const photoInput = document.querySelector('#booking-photos');
         if (photoInput && photoInput.files && photoInput.files.length) {
-          for (let i = 0; i < photoInput.files.length; i++) {
-            formData.append('files', photoInput.files[i], photoInput.files[i].name);
-          }
+          for (let i = 0; i < photoInput.files.length; i++) imageFiles.push(photoInput.files[i]);
         }
 
-        fetch(endpoint, {
-          method: 'POST',
-          body: formData
-        }).then((res) => res.json()).then((data) => {
-          state.loading = false;
-          if (data && data.ok) {
-            state.reference = data.reference || state.reference;
-            // store any image URLs returned by the backend so prefilled messages can include them
-            state.serviceDetails.photoUrls = Array.isArray(data.images) ? data.images : [];
-            state.success = true;
-          } else {
-            state.errors.general = data && (data.error || data.message) ? (data.error || data.message) : t('errors.bookingFailed');
+        const uploadedImages = [];
+        for (let i = 0; i < imageFiles.length; i++) {
+          const file = imageFiles[i];
+          const key = `bookings/${state.reference}/${Date.now()}-${file.name}`;
+          const res = await sb.uploadFile(key, file, { bucket: sb.STORAGE_BUCKET });
+          if (res && res.error) {
+            console.warn('Upload error for', file.name, res.error);
+            // continue but mark error
+            continue;
           }
-          renderBookingModal();
-        }).catch((err) => {
+          const publicUrlRes = await sb.getPublicUrl(key, { bucket: sb.STORAGE_BUCKET });
+          const url = publicUrlRes?.data?.publicUrl || (publicUrlRes?.publicURL || null) || (publicUrlRes?.data?.public_url || null);
+          uploadedImages.push({ storage_path: key, url });
+        }
+
+        const bookingRecord = {
+          reference_code: state.reference,
+          customer_name: details.fullName || '',
+          customer_email: details.email || '',
+          customer_phone: details.phone || '',
+          service_types: state.selectedServices || [],
+          preferred_date: state.date || '',
+          preferred_time: state.time || '',
+          notes: details.notes || '',
+          booking_images: uploadedImages
+        };
+
+        const resp = await sb.createBooking(bookingRecord);
+        if (resp && resp.error) {
           state.loading = false;
-          state.errors.general = t('errors.bookingNetworkError');
-          console.error('Booking submit error', err);
+          state.errors.general = resp.error.message || t('errors.bookingFailed');
           renderBookingModal();
-        });
+          return;
+        }
+
+        // success
+        state.loading = false;
+        state.serviceDetails.photoUrls = uploadedImages.map(i => i.url).filter(Boolean);
+        state.success = true;
+        renderBookingModal();
+        // refresh admin list if present
+        try { loadAdminBookingsFromBackend(); } catch (e) { /* ignore */ }
       } catch (err) {
         state.loading = false;
-        state.errors.general = t('errors.bookingUnexpected');
-        console.error('Booking prepare error', err);
+        state.errors.general = t('errors.bookingNetworkError');
+        console.error('Supabase booking error', err);
         renderBookingModal();
       }
-    } else {
+    })();
+    return;
+  }
+
+  // Fallback to existing HTTP endpoint behavior when no Supabase helper is present
+  if (endpoint && endpoint.trim()) {
+    // optimistic UI: show loading state inside modal
+    state.loading = true;
+    renderBookingModal();
+    try {
+      const formData = new FormData();
+      formData.append('reference', state.reference || '');
+      // selected services as repeated fields
+      (state.selectedServices || []).forEach(s => formData.append('selectedServices[]', s));
+      formData.append('date', state.date || '');
+      formData.append('time', state.time || '');
+      // details
+      const details = state.details || {};
+      formData.append('fullName', details.fullName || '');
+      formData.append('email', details.email || '');
+      formData.append('phone', details.phone || '');
+      formData.append('street', details.street || '');
+      formData.append('location', details.location || '');
+      formData.append('address', details.address || '');
+      formData.append('notes', details.notes || '');
+
+      // attach files from file input if present
+      const photoInput2 = document.querySelector('#booking-photos');
+      if (photoInput2 && photoInput2.files && photoInput2.files.length) {
+        for (let i = 0; i < photoInput2.files.length; i++) {
+          formData.append('files', photoInput2.files[i], photoInput2.files[i].name);
+        }
+      }
+
+      fetch(endpoint, {
+        method: 'POST',
+        body: formData
+      }).then((res) => res.json()).then((data) => {
+        state.loading = false;
+        if (data && data.ok) {
+          state.reference = data.reference || state.reference;
+          // store any image URLs returned by the backend so prefilled messages can include them
+          state.serviceDetails.photoUrls = Array.isArray(data.images) ? data.images : [];
+          state.success = true;
+        } else {
+          state.errors.general = data && (data.error || data.message) ? (data.error || data.message) : t('errors.bookingFailed');
+        }
+        renderBookingModal();
+      }).catch((err) => {
+        state.loading = false;
+        state.errors.general = t('errors.bookingNetworkError');
+        console.error('Booking submit error', err);
+        renderBookingModal();
+      });
+    } catch (err) {
+      state.loading = false;
+      state.errors.general = t('errors.bookingUnexpected');
+      console.error('Booking prepare error', err);
+      renderBookingModal();
+    }
+  } else {
     // no endpoint configured — fallback to local success flow
     console.warn('No bookingEndpoint configured in defaults; using local success flow.');
     const adminState = getAdminState();
@@ -2822,6 +2881,10 @@ function initAdminPage() {
       }
       if (target === 'bookings') {
         loadAdminBookingsFromBackend();
+          }
+          if (target === 'reviews') {
+            // load reviews from Supabase if available
+            if (window.eleaSupabase && window.eleaSupabase.listReviews) loadAdminReviewsFromSupabase();
       }
     });
   });
@@ -2914,6 +2977,27 @@ function initAdminPage() {
       const state = getAdminState();
       const id = bookingAction.dataset.bookingActionId;
       const action = bookingAction.dataset.bookingAction;
+      // If an admin proxy is configured (defaults.bookingEndpoint), call it with admin key
+      try {
+        const adminBase = (defaults.bookingEndpoint || '').replace('/api/bookings', '') + '/api/admin';
+        const adminKey = defaults.adminApiKey || '';
+        if (adminBase && adminKey) {
+          if (action === 'confirm') {
+            fetch(`${adminBase}/bookings/${encodeURIComponent(id)}/confirm`, { method: 'POST', headers: { 'x-admin-key': adminKey } }).then(() => {
+              loadAdminBookingsFromBackend();
+            }).catch(() => { loadAdminBookingsFromBackend(); });
+          } else if (action === 'delete') {
+            fetch(`${adminBase}/bookings/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-admin-key': adminKey } }).then(() => {
+              loadAdminBookingsFromBackend();
+            }).catch(() => { loadAdminBookingsFromBackend(); });
+          }
+          return;
+        }
+      } catch (e) {
+        console.warn('Admin proxy call failed', e);
+      }
+
+      // Fallback to local state modification when no proxy configured
       if (action === 'confirm') {
         const item = state.bookings.find((entry) => entry.id === id);
         if (item) item.status = 'confirmed';
@@ -2945,17 +3029,51 @@ function initAdminPage() {
     if (reviewAction) {
       const state = getAdminState();
       const id = reviewAction.dataset.reviewId;
-      if (reviewAction.dataset.reviewAction === 'approve') {
-        const review = state.reviews.find((item) => item.id === id);
-        if (review) review.status = 'approved';
+      // If admin proxy is configured, call it; otherwise prefer Supabase client; fallback to local state
+      try {
+        const adminBase = (defaults.bookingEndpoint || '').replace('/api/bookings', '') + '/api/admin';
+        const adminKey = defaults.adminApiKey || '';
+        if (adminBase && adminKey) {
+          if (reviewAction.dataset.reviewAction === 'approve') {
+            fetch(`${adminBase}/reviews/${encodeURIComponent(id)}/approve`, { method: 'POST', headers: { 'x-admin-key': adminKey } }).then(() => loadAdminReviewsFromSupabase()).catch(() => loadAdminReviewsFromSupabase());
+          } else if (reviewAction.dataset.reviewAction === 'delete') {
+            fetch(`${adminBase}/reviews/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-admin-key': adminKey } }).then(() => loadAdminReviewsFromSupabase()).catch(() => loadAdminReviewsFromSupabase());
+          }
+          return;
+        }
+      } catch (e) { console.warn('Admin proxy call failed', e); }
+
+      if (window.eleaSupabase && window.eleaSupabase.client) {
+        (async () => {
+          try {
+            const sb = window.eleaSupabase.client();
+            if (reviewAction.dataset.reviewAction === 'approve') {
+              await sb.from('reviews').update({ status: 'approved' }).eq('id', id);
+            }
+            if (reviewAction.dataset.reviewAction === 'delete') {
+              await sb.from('reviews').delete().eq('id', id);
+            }
+          } catch (e) {
+            console.warn('Review action error', e);
+          }
+          try { if (window.eleaSupabase && window.eleaSupabase.listReviews) await loadAdminReviewsFromSupabase(); } catch (e) { /* ignore */ }
+          renderHomepageContent();
+          renderAdminDashboard();
+          updateAdminTabBadges();
+        })();
+      } else {
+        if (reviewAction.dataset.reviewAction === 'approve') {
+          const review = state.reviews.find((item) => item.id === id);
+          if (review) review.status = 'approved';
+        }
+        if (reviewAction.dataset.reviewAction === 'delete') {
+          state.reviews = state.reviews.filter((item) => item.id !== id);
+        }
+        saveAdminState(state);
+        renderHomepageContent();
+        renderAdminDashboard();
+        updateAdminTabBadges();
       }
-      if (reviewAction.dataset.reviewAction === 'delete') {
-        state.reviews = state.reviews.filter((item) => item.id !== id);
-      }
-      saveAdminState(state);
-      renderHomepageContent();
-      renderAdminDashboard();
-      updateAdminTabBadges();
       return;
     }
 
@@ -3048,6 +3166,38 @@ async function loadAdminCustomersFromBackend() {
   }
 }
 
+async function loadAdminReviewsFromSupabase() {
+  try {
+    if (!(window.eleaSupabase && window.eleaSupabase.listReviews)) throw new Error('Supabase reviews helper not available');
+    const resp = await window.eleaSupabase.listReviews(false);
+    if (resp && resp.error) throw resp.error;
+    const reviews = resp.data || [];
+    const reviewTarget = document.getElementById('admin-reviews-list');
+    if (!reviewTarget) return;
+    if (!reviews.length) {
+      reviewTarget.innerHTML = '<div class="admin-note">No reviews found.</div>';
+      return;
+    }
+    reviewTarget.innerHTML = reviews.map((review) => `
+      <article class="admin-review-card">
+        <div class="admin-card-top">
+          <div class="admin-card-ref">${escapeHtml(review.name || review.customer_name || '')}</div>
+          <span class="status-badge ${review.approved ? 'status-confirmed' : 'status-pending'}">${escapeHtml(review.approved ? 'approved' : (review.status || 'pending'))}</span>
+        </div>
+        <div class="admin-card-meta">${'★'.repeat(review.rating || 5)}${'☆'.repeat(Math.max(0, 5 - (review.rating || 5)))} · ${escapeHtml(review.service || '')}</div>
+        <div class="admin-card-services">“${escapeHtml(review.text || review.review_text || '')}”</div>
+        <div class="review-actions">
+          <button class="action-btn approve" type="button" data-review-action="approve" data-review-id="${escapeHtml(review.id)}"><i data-lucide="check"></i> ${review.approved ? 'Approved' : 'Approve'}</button>
+          <button class="action-btn delete" type="button" data-review-action="delete" data-review-id="${escapeHtml(review.id)}"><i data-lucide="trash-2"></i> Delete</button>
+        </div>
+      </article>
+    `).join('');
+    if (window.lucide) lucide.createIcons();
+  } catch (err) {
+    console.warn('loadAdminReviewsFromSupabase error', err);
+  }
+}
+
 async function loadAdminUsersFromBackend() {
   try {
     const res = await fetch((defaults.bookingEndpoint || '').replace('/api/bookings','') + '/api/admin/users', { credentials: 'include' });
@@ -3081,11 +3231,54 @@ async function loadAdminUsersFromBackend() {
 /* Bookings loader + renderer that uses backend data (includes uploaded images) */
 async function loadAdminBookingsFromBackend() {
   try {
+    const bookingTarget = document.getElementById('admin-bookings-list');
+    if (!bookingTarget) return;
+
+    // Prefer Supabase-backed bookings if available
+    if (window.eleaSupabase && window.eleaSupabase.listBookings) {
+      const resp = await window.eleaSupabase.listBookings();
+      if (resp && resp.error) throw resp.error;
+      const data = resp.data || [];
+      const bookings = Array.isArray(data) ? data : [];
+      // render using bookings
+      const stats = `
+      <div class="admin-stat-grid">
+        <div class="admin-stat-card"><span>Total</span><strong>${bookings.length}</strong></div>
+        <div class="admin-stat-card"><span>Pending</span><strong>${bookings.filter((b) => b.status !== 'confirmed').length}</strong></div>
+        <div class="admin-stat-card"><span>Confirmed</span><strong>${bookings.filter((b) => b.status === 'confirmed').length}</strong></div>
+      </div>
+    `;
+
+      const html = bookings.length ? stats + bookings.map((booking) => {
+        const imgs = (booking.booking_images || []).map(i => i.url || i.storage_path).filter(Boolean);
+        const imgHtml = imgs.length ? `<div class="booking-images">${imgs.map(u => `<a href="${u}" target="_blank" rel="noreferrer"><img class="booking-thumb" src="${u}" alt="booking image" loading="lazy"/></a>`).join('')}</div>` : '';
+        const bookingDataAttr = encodeURIComponent(JSON.stringify(booking));
+        return `
+      <article class="admin-card admin-booking-card" data-booking-id="${escapeHtml(booking.id)}" data-booking='${bookingDataAttr}'>
+        <div class="admin-card-top">
+          <div class="admin-card-ref">${escapeHtml(booking.reference_code || booking.reference || booking.id || '')}</div>
+          <span class="status-badge ${booking.status === 'confirmed' ? 'status-confirmed' : booking.status === 'pending' ? 'status-pending' : 'status-new'}">${escapeHtml(booking.status || 'new')}</span>
+        </div>
+        <div class="admin-card-meta">${escapeHtml(booking.customer_name || booking.name || 'Guest')} — ${escapeHtml(booking.customer_email || '')}</div>
+        <div class="admin-card-services">${escapeHtml(Array.isArray(booking.service_types) ? booking.service_types.join(', ') : (booking.service_types || booking.service || 'General'))}</div>
+        <div class="booking-meta-row"><span>${escapeHtml(booking.preferred_date || booking.date || '')}</span><span>${escapeHtml(booking.preferred_time || booking.time || '')}</span></div>
+        ${imgHtml}
+        <div class="booking-action-row">
+          <button class="action-btn approve" type="button" data-booking-action="confirm" data-booking-action-id="${escapeHtml(booking.id)}">Confirm</button>
+          <button class="action-btn delete" type="button" data-booking-action="delete" data-booking-action-id="${escapeHtml(booking.id)}">Delete</button>
+        </div>
+      </article>
+      `;
+      }).join('') : stats + '<div class="admin-note">No bookings recorded yet.</div>';
+
+      bookingTarget.innerHTML = html;
+      return;
+    }
+
+    // Fallback to HTTP admin endpoint
     const res = await fetch((defaults.bookingEndpoint || '').replace('/api/bookings','') + '/api/admin/bookings', { credentials: 'include' });
     if (!res.ok) throw new Error('Failed to load bookings: ' + res.statusText);
     const payload = await res.json();
-    const bookingTarget = document.getElementById('admin-bookings-list');
-    if (!bookingTarget) return;
     if (!(payload && payload.ok && Array.isArray(payload.bookings))) {
       bookingTarget.innerHTML = '<div class="admin-note">No bookings found.</div>';
       return;
@@ -3204,7 +3397,87 @@ function initAdminBookings() {
 }
 
 function initAuthHandlers() {
-  // Auth screens have been removed from the site.
+  // Wire signup and login forms to Supabase auth and persist `customers` records.
+  const signupForm = document.getElementById('signup-form');
+  const loginForm = document.getElementById('login-form');
+
+  if (signupForm) {
+    signupForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const msg = document.getElementById('signup-message');
+      const name = signupForm.querySelector('#signup-name')?.value?.trim() || '';
+      const email = signupForm.querySelector('#signup-email')?.value?.trim() || '';
+      const phone = signupForm.querySelector('#signup-phone')?.value?.trim() || '';
+      const plan = signupForm.querySelector('#signup-plan-select')?.value || '';
+      const password = signupForm.querySelector('#signup-password')?.value || '';
+      const confirm = signupForm.querySelector('#signup-confirm-password')?.value || '';
+
+      if (!email || !password) {
+        if (msg) msg.textContent = 'Email and password required.';
+        return;
+      }
+      if (password !== confirm) {
+        if (msg) msg.textContent = 'Passwords do not match.';
+        return;
+      }
+      if (!window.eleaSupabase) {
+        if (msg) msg.textContent = 'Supabase is unavailable.';
+        return;
+      }
+
+      try {
+        if (msg) { msg.textContent = 'Creating account...'; }
+        const res = await window.eleaSupabase.signUp(email, password, { name, phone, plan });
+        if (res?.error) {
+          if (msg) msg.textContent = res.error.message || 'Signup failed.';
+          return;
+        }
+        // Try to persist in customers table (ignore duplicate errors)
+        try {
+          await window.eleaSupabase.createCustomer({ customer_name: name, customer_email: email, customer_phone: phone, plan });
+        } catch (e) { /* ignore */ }
+
+        if (msg) msg.textContent = 'Account created. Redirecting...';
+        setTimeout(() => { window.location.href = 'index.html'; }, 900);
+      } catch (err) {
+        if (msg) msg.textContent = (err && err.message) ? err.message : 'Signup failed.';
+      }
+    });
+  }
+
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const msg = document.getElementById('login-message');
+      const email = loginForm.querySelector('#login-email')?.value?.trim() || '';
+      const password = loginForm.querySelector('#login-password')?.value || '';
+      if (!email || !password) {
+        if (msg) msg.textContent = 'Email and password required.';
+        return;
+      }
+      if (!window.eleaSupabase) {
+        if (msg) msg.textContent = 'Supabase is unavailable.';
+        return;
+      }
+
+      try {
+        if (msg) { msg.textContent = 'Signing in...'; }
+        const res = await window.eleaSupabase.signIn(email, password);
+        if (res?.error) {
+          if (msg) msg.textContent = res.error.message || 'Signin failed.';
+          return;
+        }
+        // Ensure customer record exists
+        try {
+          await window.eleaSupabase.createCustomer({ customer_name: '', customer_email: email, customer_phone: '' });
+        } catch (e) { /* ignore */ }
+        if (msg) msg.textContent = 'Signed in. Redirecting...';
+        setTimeout(() => { window.location.href = 'index.html'; }, 700);
+      } catch (err) {
+        if (msg) msg.textContent = (err && err.message) ? err.message : 'Signin failed.';
+      }
+    });
+  }
 }
 function normalizeWhatsAppLinks() {
   document.querySelectorAll('a[href*="wa.me/254762097075"]').forEach((a) => {
@@ -3241,6 +3514,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initAdminPage();
   initAdminCalendar();
   initAdminBookings();
+  initAuthHandlers();
   const _adminAuthenticated = await refreshAdminAuthState();
   if (_adminAuthenticated) {
     // Load remote customer list for the admin panel

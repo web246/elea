@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Sitemap: https://your-domain.com/sitemap.xml
+
+# If you have admin or staging pages, keep them disallowed explicitly
+Disallow: /admin.html
+Disallow: /elea.htm
