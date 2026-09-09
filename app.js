@@ -4678,8 +4678,8 @@ function normalizeSocialIcons() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   applyAdminSiteValues();
-  // Force German as the primary site language on initial load
-  setLang('de');
+  // German is the default; retain an explicit choice made with the language switcher.
+  setLang(getLang());
   renderHomepageContent();
   applyTranslations();
   initNavbar();
