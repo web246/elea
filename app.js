@@ -1638,12 +1638,294 @@ function serviceRadioMarkup(options, fieldName, state, className = 'booking-opti
     <div class="${className}">
       ${values.map((option) => `
         <label class="booking-choice ${state.form[fieldName] === option ? 'active' : ''}">
-          <input type="radio" name="${fieldName}" value="${option}" ${state.form[fieldName] === option ? 'checked' : ''} />
+          <input type="radio" data-booking-field="${fieldName}" name="${fieldName}" value="${option}" ${state.form[fieldName] === option ? 'checked' : ''} />
           <span>${option}</span>
         </label>
       `).join('')}
     </div>
   `;
+}
+
+function applyBookingValidationClasses(modal, state) {
+  if (!modal) return;
+  const fieldErrors = state.errors && state.errors.fields ? state.errors.fields : {};
+  modal.querySelectorAll('[data-booking-field]').forEach((element) => {
+    const fieldName = element.dataset.bookingField;
+    const invalid = Boolean(fieldName && fieldErrors[fieldName]);
+
+    element.classList.toggle('is-invalid', invalid);
+
+    const fieldWrapper = element.closest('.booking-field');
+    if (fieldWrapper) {
+      fieldWrapper.classList.toggle('is-invalid', invalid);
+    }
+
+    const choiceWrapper = element.closest('.booking-choice');
+    if (choiceWrapper) {
+      choiceWrapper.classList.toggle('is-invalid', invalid);
+    }
+  });
+
+  modal.querySelectorAll('.booking-section-card').forEach((section) => {
+    const invalidChild = section.querySelector('.is-invalid, .booking-choice.is-invalid, .booking-field.is-invalid');
+    section.classList.toggle('has-invalid-fields', Boolean(invalidChild));
+  });
+
+  const customerFields = ['name', 'phone', 'email', 'street', 'location', 'address', 'notes'];
+  customerFields.forEach((fieldName) => {
+    const element = modal.querySelector(`[data-customer-${fieldName}]`);
+    if (!element) return;
+    const invalid = Boolean(fieldErrors[fieldName]);
+    element.classList.toggle('is-invalid', invalid);
+    const fieldWrapper = element.closest('.booking-field');
+    if (fieldWrapper) {
+      fieldWrapper.classList.toggle('is-invalid', invalid);
+    }
+  });
+
+  const dateFields = ['date', 'time'];
+  dateFields.forEach((fieldName) => {
+    const element = modal.querySelector(fieldName === 'date' ? '[data-booking-date]' : '[data-booking-time]');
+    if (!element) return;
+    const invalid = Boolean(fieldErrors[fieldName]);
+    element.classList.toggle('is-invalid', invalid);
+    const fieldWrapper = element.closest('.booking-field');
+    if (fieldWrapper) {
+      fieldWrapper.classList.toggle('is-invalid', invalid);
+    }
+  });
+}
+
+function clearBookingFieldError(state, fieldName) {
+  if (!state || !state.errors || !state.errors.fields || !fieldName) return;
+  if (state.errors.fields[fieldName]) {
+    delete state.errors.fields[fieldName];
+  }
+  if (!Object.keys(state.errors.fields).length) {
+    state.errors.general = '';
+  }
+}
+
+function updateBookingFieldErrors(modal, state) {
+  if (!modal || !state || !state.errors) return;
+  const fieldErrors = state.errors.fields || {};
+
+  const applyFieldState = (element, fieldName, errorText) => {
+    if (!element) return;
+    const wrapper = element.closest('.booking-field');
+    const choice = element.closest('.booking-choice');
+    if (!errorText) {
+      if (wrapper) {
+        const inlineError = wrapper.querySelector('.booking-inline-error');
+        if (inlineError) inlineError.remove();
+        wrapper.classList.remove('is-invalid');
+      }
+      if (choice) {
+        choice.classList.remove('is-invalid');
+        const inlineError = choice.querySelector('.booking-inline-error');
+        if (inlineError) inlineError.remove();
+      }
+      element.classList.remove('is-invalid');
+      return;
+    }
+
+    element.classList.add('is-invalid');
+    if (wrapper) {
+      wrapper.classList.add('is-invalid');
+      let inlineError = wrapper.querySelector('.booking-inline-error');
+      if (!inlineError) {
+        inlineError = document.createElement('div');
+        inlineError.className = 'booking-inline-error';
+        wrapper.appendChild(inlineError);
+      }
+      inlineError.textContent = errorText;
+    }
+
+    if (choice) {
+      choice.classList.add('is-invalid');
+      let inlineError = choice.querySelector('.booking-inline-error');
+      if (!inlineError) {
+        inlineError = document.createElement('div');
+        inlineError.className = 'booking-inline-error';
+        choice.appendChild(inlineError);
+      }
+      inlineError.textContent = errorText;
+    }
+  };
+
+  modal.querySelectorAll('[data-booking-field]').forEach((element) => {
+    const fieldName = element.dataset.bookingField;
+    applyFieldState(element, fieldName, fieldName ? fieldErrors[fieldName] : '');
+  });
+
+  ['name', 'phone', 'email', 'street', 'location', 'address', 'notes'].forEach((fieldName) => {
+    const element = modal.querySelector(`[data-customer-${fieldName}]`);
+    applyFieldState(element, fieldName, fieldErrors[fieldName]);
+  });
+
+  ['date', 'time'].forEach((fieldName) => {
+    const element = modal.querySelector(fieldName === 'date' ? '[data-booking-date]' : '[data-booking-time]');
+    applyFieldState(element, fieldName, fieldErrors[fieldName]);
+  });
+
+  modal.querySelectorAll('.booking-section-card').forEach((section) => {
+    const invalidChild = section.querySelector('.is-invalid, .booking-choice.is-invalid, .booking-field.is-invalid');
+    section.classList.toggle('has-invalid-fields', Boolean(invalidChild));
+  });
+}
+
+function focusFirstBookingError(modal) {
+  if (!modal) return;
+  const selectors = [
+    '.is-invalid[data-booking-field]',
+    '.is-invalid[data-customer-name]',
+    '.is-invalid[data-customer-phone]',
+    '.is-invalid[data-customer-email]',
+    '.is-invalid[data-customer-street]',
+    '.is-invalid[data-customer-location]',
+    '.is-invalid[data-customer-address]',
+    '.is-invalid[data-customer-notes]',
+    '.is-invalid[data-booking-date]',
+    '.is-invalid[data-booking-time]',
+    '.booking-choice.is-invalid input'
+  ];
+  const target = selectors.map((selector) => modal.querySelector(selector)).find(Boolean);
+  if (!target) return;
+  const field = target.matches && target.matches('input, select, textarea, button') ? target : target.querySelector && target.querySelector('input, select, textarea, button');
+  const element = field || target;
+  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => {
+    if (typeof element.focus === 'function') element.focus();
+  }, 60);
+}
+
+function getBookingStepErrorState(state) {
+  const errors = { general: '', fields: {} };
+
+  if (state.step === 0 && !state.quoteOnly && !state.selectedService) {
+    errors.general = 'Please select a service.';
+    errors.fields.selectedService = 'Please select a service.';
+    return errors;
+  }
+
+  if (state.step === 1) {
+    if (state.quoteOnly) {
+      if (!String(state.form.quoteDetails || '').trim()) {
+        errors.general = 'Please tell us about the work.';
+        errors.fields.quoteDetails = 'Please tell us about the work.';
+      }
+      return errors;
+    }
+
+    if (state.selectedService === 'HOME CLEANING / HOUSEKEEPING' && !state.form.cleaningType) {
+      errors.general = 'Please select the type of cleaning you need.';
+      errors.fields.cleaningType = 'Please select the type of cleaning you need.';
+      return errors;
+    }
+
+    if (state.selectedService === 'OVEN & APPLIANCE CLEANING') {
+      const applianceErrors = ['appliances', 'applianceCount', 'applianceCleaningType', 'applianceCondition'];
+      const messages = {
+        appliances: 'Please select at least one appliance.',
+        applianceCount: 'Please enter how many appliances are included.',
+        applianceCleaningType: 'Please select the cleaning type required.',
+        applianceCondition: 'Please select the appliance condition.'
+      };
+      const missing = applianceErrors.filter((field) => {
+        if (field === 'appliances') return !(Array.isArray(state.form.appliances) && state.form.appliances.length);
+        return !String(state.form[field] || '').trim();
+      });
+      if (missing.length) {
+        errors.general = 'Please complete the appliance details.';
+        missing.forEach((field) => { errors.fields[field] = messages[field] || 'Please complete this field.'; });
+        return errors;
+      }
+    }
+
+    if (state.selectedService === 'WINDOW CLEANING') {
+      const windowErrors = ['windowsCount', 'windowType', 'windowCleaningType'];
+      const messages = {
+        windowsCount: 'Please enter how many windows need cleaning.',
+        windowType: 'Please select the type of windows.',
+        windowCleaningType: 'Please select the window cleaning type.'
+      };
+      const missing = windowErrors.filter((field) => !String(state.form[field] || '').trim());
+      if (missing.length) {
+        errors.general = 'Please complete the window details.';
+        missing.forEach((field) => { errors.fields[field] = messages[field] || 'Please complete this field.'; });
+        return errors;
+      }
+    }
+
+    if (state.selectedService === 'HOME ORGANIZATION') {
+      const organizationErrors = [];
+      if (!(Array.isArray(state.form.organizationArea) && state.form.organizationArea.length)) organizationErrors.push({ field: 'organizationArea', message: 'Please select the area that needs organization.' });
+      if (!state.form.organizationType) organizationErrors.push({ field: 'organizationType', message: 'Please select the type of organization you need.' });
+      if (organizationErrors.length) {
+        errors.general = 'Please choose the area and type of organization.';
+        organizationErrors.forEach(({ field, message }) => { errors.fields[field] = message; });
+        return errors;
+      }
+    }
+
+    if (state.selectedService === 'MOVE-IN / MOVE-OUT CLEANING' && !state.form.moveType) {
+      errors.general = 'Please select whether this is a move-in or move-out cleaning.';
+      errors.fields.moveType = 'Please select whether this is a move-in or move-out cleaning.';
+      return errors;
+    }
+
+    if (state.selectedService === 'AFTER-RENOVATION CLEANING' && !state.form.renovationType) {
+      errors.general = 'Please tell us what type of renovation was completed.';
+      errors.fields.renovationType = 'Please tell us what type of renovation was completed.';
+      return errors;
+    }
+
+    if (state.selectedService === 'DUSTBIN / BIN CLEANING') {
+      const binErrors = ['binCount', 'binType', 'binLocation', 'binCondition', 'binService'];
+      const messages = {
+        binCount: 'Please enter how many bins need cleaning.',
+        binType: 'Please select the type of bins.',
+        binLocation: 'Please select where the bins are located.',
+        binCondition: 'Please select the bin condition.',
+        binService: 'Please select the required service.'
+      };
+      const missing = binErrors.filter((field) => !String(state.form[field] || '').trim());
+      if (missing.length) {
+        errors.general = 'Please complete all bin cleaning details.';
+        missing.forEach((field) => { errors.fields[field] = messages[field] || 'Please complete this field.'; });
+        return errors;
+      }
+    }
+  }
+
+  if (state.step === 2 && (!state.date || !state.time)) {
+    errors.general = 'Please select a preferred date and time.';
+    if (!state.date) errors.fields.date = 'Please select your preferred date.';
+    if (!state.time) errors.fields.time = 'Please select your preferred time.';
+    return errors;
+  }
+
+  if (state.step === 3) {
+    const customerFields = ['name', 'phone', 'email'];
+    const messages = {
+      name: 'Please enter your full name.',
+      phone: 'Please enter your phone number.',
+      email: 'Please enter a valid email address.'
+    };
+    const missing = customerFields.filter((field) => !String(state.customer[field] || '').trim());
+    if (missing.length) {
+      errors.general = 'Please provide your name, phone number and email.';
+      missing.forEach((field) => { errors.fields[field] = messages[field] || 'Please complete this field.'; });
+      return errors;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(String(state.customer.email || '').trim())) {
+      errors.general = 'Please enter a valid email address.';
+      errors.fields.email = 'Please enter a valid email address.';
+      return errors;
+    }
+  }
+
+  return errors;
 }
 
 function serviceCheckboxMarkup(options, fieldName, state, labelText) {
@@ -2022,6 +2304,7 @@ function validateBookingState(state) {
 }
 
 function setBookingFieldValue(state, fieldName, value) {
+  clearBookingFieldError(state, fieldName);
   if (fieldName === 'additionalServices' || fieldName === 'additionalAreas' || fieldName === 'appliances' || fieldName === 'moveTasks' || fieldName === 'renovationResidue' || fieldName === 'renovationTasks' || fieldName === 'propertyCondition') {
     const values = Array.isArray(state.form[fieldName]) ? [...state.form[fieldName]] : [];
     if (Array.isArray(value)) {
@@ -2057,11 +2340,17 @@ function bindBookingFieldInputs(modal, state) {
   });
 
   modal.querySelectorAll('[data-booking-date]').forEach((field) => {
-    field.addEventListener('input', () => { state.date = field.value; });
+    field.addEventListener('input', () => {
+      clearBookingFieldError(state, 'date');
+      state.date = field.value;
+    });
   });
 
   modal.querySelectorAll('[data-booking-time]').forEach((field) => {
-    field.addEventListener('input', () => { state.time = field.value; });
+    field.addEventListener('input', () => {
+      clearBookingFieldError(state, 'time');
+      state.time = field.value;
+    });
   });
 
   modal.querySelectorAll('[data-booking-photos]').forEach((input) => {
@@ -2077,6 +2366,7 @@ function bindBookingFieldInputs(modal, state) {
     const el = modal.querySelector(`[data-customer-${fieldName}]`);
     if (!el) return;
     const setter = () => {
+      clearBookingFieldError(state, fieldName);
       state.customer[fieldName] = el.value;
     };
     el.addEventListener('input', setter);
@@ -2260,6 +2550,9 @@ function renderBookingModal() {
     </div>
   `;
 
+  applyBookingValidationClasses(modal, state);
+  updateBookingFieldErrors(modal, state);
+
   lucide.createIcons();
   modal._bookingHandler = function (event) {
     if (event.target.closest('[data-booking-close]')) { closeBookingModal(); return; }
@@ -2285,9 +2578,11 @@ function renderBookingModal() {
       return;
     }
     if (event.target.closest('[data-booking-next]')) {
-      if (state.step === 0 && !state.quoteOnly && !state.selectedService) {
-        state.errors.general = 'Please select a main service.';
+      const stepErrors = getBookingStepErrorState(state);
+      if (stepErrors.general) {
+        state.errors = stepErrors;
         renderBookingModal();
+        focusFirstBookingError(document.getElementById('booking-modal'));
         return;
       }
       if (state.step === 3) {

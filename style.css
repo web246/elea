@@ -2743,6 +2743,35 @@ html, body { max-width: 100vw; overflow-x: hidden; }
   font-size:.9rem;
 }
 .booking-error.show { display:block; }
+.booking-field.is-invalid > span,
+.booking-choice-field.is-invalid > legend,
+.booking-choice.is-invalid span,
+.booking-field.is-invalid .elea-input,
+.booking-field.is-invalid select,
+.booking-field.is-invalid textarea,
+.booking-field.is-invalid input,
+.booking-choice.is-invalid {
+  color: hsl(var(--destructive));
+}
+.booking-field.is-invalid .elea-input,
+.booking-field.is-invalid select,
+.booking-field.is-invalid textarea,
+.booking-field.is-invalid input,
+.booking-choice.is-invalid,
+.booking-field.is-invalid {
+  border-color: hsl(var(--destructive) / 0.7);
+  box-shadow: 0 0 0 1px hsl(var(--destructive) / 0.12);
+}
+.booking-choice.is-invalid {
+  background: hsl(var(--destructive) / 0.04);
+  border-color: hsl(var(--destructive) / 0.7);
+}
+.booking-inline-error {
+  margin-top: .45rem;
+  color: hsl(var(--destructive));
+  font-size: .8rem;
+  line-height: 1.4;
+}
 .booking-actions {
   margin-top: 2.5rem;
   padding-top: 1.5rem;
