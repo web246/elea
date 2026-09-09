@@ -2,11 +2,11 @@
   "name": "elea-backend",
   "version": "1.0.0",
   "description": "Supabase backend for ELEA booking, referrals, and admin workflows",
-  "main": "backend/server.js",
+  "main": "server/index.js",
   "scripts": {
-    "dev": "node backend/server.js",
-    "start": "node backend/server.js",
-    "check": "node --check backend/server.js"
+    "dev": "node server/index.js",
+    "start": "node server/index.js",
+    "check": "node --check server/index.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",

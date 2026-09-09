@@ -1919,7 +1919,7 @@ function renderBinCleaningForm(state) {
         <h3>Bin details</h3>
         <div class="booking-two-col">
           <label class="booking-field"><span>How many bins need cleaning?</span><input type="number" min="1" value="${state.form.binCount || ''}" data-booking-field="binCount" class="elea-input" /></label>
-          <label class="booking-field"><span>What type of bins?</span><select data-booking-field="binTypes" class="elea-input"><option value="">Select</option>${['General waste', 'Recycling', 'Organic waste', 'Other'].map((option) => `<option value="${option}" ${state.form.binTypes === option ? 'selected' : ''}>${option}</option>`).join('')}</select></label>
+          <label class="booking-field"><span>What type of bins?</span><select data-booking-field="binType" class="elea-input"><option value="">Select</option>${['General waste', 'Recycling', 'Organic waste', 'Other'].map((option) => `<option value="${option}" ${state.form.binType === option ? 'selected' : ''}>${option}</option>`).join('')}</select></label>
         </div>
         <div class="booking-two-col">
           <label class="booking-field"><span>Where are the bins located?</span><select data-booking-field="binLocation" class="elea-input"><option value="">Select</option>${['Inside', 'Outside', 'Both'].map((option) => `<option value="${option}" ${state.form.binLocation === option ? 'selected' : ''}>${option}</option>`).join('')}</select></label>
@@ -1935,7 +1935,7 @@ function renderBinCleaningForm(state) {
         </div>
       </div>
       <label class="booking-field booking-field-full"><span>Special instructions</span><textarea data-booking-field="specialInstructions" class="elea-input">${state.form.specialInstructions || ''}</textarea></label>
-      <label class="booking-field booking-field-full"><span>Photos (optional)</span><input type="file" accept="image/*" multiple data-booking-photos class="elea-input" /></label>
+      <label class="booking-field booking-field-full"><span>Upload photos of the bins (optional)</span><input type="file" accept="image/*" multiple data-booking-photos class="elea-input" /></label>
     </div>
   `;
 }
@@ -1998,8 +1998,8 @@ function validateBookingState(state) {
     return false;
   }
 
-  if (state.selectedService === 'DUSTBIN / BIN CLEANING' && !state.form.binService) {
-    state.errors.general = 'Please tell us what bin cleaning service is required.';
+  if (state.selectedService === 'DUSTBIN / BIN CLEANING' && (!state.form.binCount || !state.form.binType || !state.form.binLocation || !state.form.binCondition || !state.form.binService)) {
+    state.errors.general = 'Please complete all bin cleaning details.';
     return false;
   }
 
@@ -2861,7 +2861,7 @@ function openBookingModal(serviceName = '') {
     serviceOptions: serviceData.map(item => item.key),
     selectedServices: serviceName ? [serviceName] : [],
     property: { type: '', size: '', bedrooms: '', bathrooms: '', kitchens: '', livingRooms: '', toilets: '', balconies: '', floors: '', elevator: '', condition: '', lastProfessionalCleaning: '' },
-    serviceDetails: { furnished: '', empty: '', appliances: [], otherAppliance: '', renovationDust: '', binCount: '', binType: '', binLocation: '', binCondition: '', binService: '', photoNames: [] },
+    serviceDetails: { furnished: '', empty: '', appliances: [], otherAppliance: '', renovationDust: '', binCount: '', binType: '', binLocation: '', binCondition: '', binService: '', specialInstructions: '', photoNames: [] },
     date: '',
     time: '',
     details: { fullName: '', phone: '', email: '', street: '', location: '', address: '', notes: '' },
@@ -3442,6 +3442,7 @@ function buildEmailBody(state) {
 // Updated booking flow overrides. Kept together so every form value has one source of truth.
 function bookingSelect(label, key, options, values) { return `<div class="booking-detail-field"><label for="booking-${key}">${label}</label><select id="booking-${key}" class="elea-input"><option value="">${t('booking.selectOption') || 'Bitte wählen'}</option>${options.map(option => `<option value="${option}" ${values[key] === option ? 'selected' : ''}>${option}</option>`).join('')}</select></div>`; }
 function bookingInput(label, key, values) { return `<div class="booking-detail-field"><label for="booking-${key}">${label}</label><input id="booking-${key}" class="elea-input" type="number" min="0" value="${values[key] || ''}"></div>`; }
+function bookingTextArea(label, key, values) { return `<div class="booking-detail-field full"><label for="booking-${key}">${label}</label><textarea id="booking-${key}" class="elea-input">${values[key] || ''}</textarea></div>`; }
 function hasDetailedCleaningService(state) { return state.selectedServices.some(service => /move.?in|move.?out|deep/i.test(service)); }
 function hasPhotoRecommendedService(state) { return state.selectedServices.some(service => /move.?in|move.?out|deep|renovation/i.test(service)); }
 function bookingDetailRows(state) {
@@ -3554,9 +3555,24 @@ function needsApplianceChoices(state) {
 }
 function renderBookingStep(state) {
   const services = [...serviceData, { key: 'Deep Cleaning', title: 'Deep Cleaning' }];
-  if (state.step === 0) return `
-    <div class="booking-intro"><span class="booking-kicker">01 / ${t('booking.stepShortService') || 'SERVICE'}</span><h2 class="elea-heading booking-step-question">${t('booking.serviceQuestion')}</h2><p class="elea-body booking-step-hint">${t('booking.serviceHint')}</p></div>
-    <div class="booking-service-grid">${services.map(service => `<button class="booking-toggle ${state.selectedServices.includes(service.key) ? 'active' : ''}" data-service-select="${service.key}"><span class="toggle-title">${service.titleKey ? t(service.titleKey) : (service.title || service.key)}</span><span class="toggle-check"><i data-lucide="check"></i></span></button>`).join('')}</div>`;
+  if (state.step === 0) {
+    const selectedSummary = state.selectedServices.length
+      ? state.selectedServices.map(serviceKey => getServiceLabel(serviceKey)).join(' + ')
+      : 'No service selected yet';
+    const selectedCountText = state.selectedServices.length === 1
+      ? 'Selected service'
+      : state.selectedServices.length > 1
+        ? 'Selected services'
+        : 'Choose your service';
+    return `
+      <div class="booking-intro"><span class="booking-kicker">01 / ${t('booking.stepShortService') || 'SERVICE'}</span><h2 class="elea-heading booking-step-question">${selectedCountText}</h2><p class="elea-body booking-step-hint">${state.selectedServices.length ? `You selected: ${selectedSummary}. We’ll show only the questions relevant to this service combination.` : t('booking.serviceHint')}</p></div>
+      <div class="booking-service-grid">${services.map(service => {
+        const label = getServiceLabel(service.key);
+        const active = state.selectedServices.includes(service.key);
+        return `<button class="booking-toggle ${active ? 'active' : ''}" data-service-select="${service.key}"><span class="toggle-title">${label}</span><span class="toggle-check"><i data-lucide="check"></i></span></button>`;
+      }).join('')}</div>
+      ${state.selectedServices.length ? `<div class="booking-selected-summary">${selectedSummary}</div>` : ''}`;
+  }
   if (state.step === 2) {
     const detailed = hasDetailedCleaningService(state);
     const applianceChoices = needsApplianceChoices(state);
@@ -3566,15 +3582,15 @@ function renderBookingStep(state) {
       <div class="booking-intro"><span class="booking-kicker">03 / DETAILS</span><h2 class="elea-heading booking-step-question">${binService ? 'Tell us about the bins.' : detailed ? 'A few details for your clean.' : photoRecommended ? 'Help us prepare your quote.' : 'Optional property photos.'}</h2><p class="elea-body booking-step-hint">${binService ? 'A few details will help us quote the right service and timing.' : detailed ? 'These details help us plan the right team, time and equipment.' : photoRecommended ? 'Photos help us assess the space and provide a more accurate quote.' : 'You can add photos if they would help us understand the space.'}</p></div>
       ${detailed ? `<section class="booking-section-card"><div class="booking-section-title">Property access</div><div class="booking-details-grid">${bookingSelect('Is the property furnished?', 'furnished', ['Yes', 'No', 'Partially'], state.serviceDetails)}${bookingSelect('Is the property currently empty?', 'empty', ['Yes', 'No'], state.serviceDetails)}</div></section>` : ''}
       ${applianceChoices ? `<section class="booking-section-card"><div class="booking-section-title">What needs cleaning?</div><fieldset class="booking-appliance-list"><legend>Select all that apply</legend>${['Oven', 'Refrigerator', 'Dishwasher', 'Washing machine', 'Windows / interior window cleaning', 'Balcony / terrace cleaning', 'Other'].map(item => `<label><input type="checkbox" data-appliance value="${item}" ${state.serviceDetails.appliances.includes(item) ? 'checked' : ''}><span>${item}</span></label>`).join('')}</fieldset>${state.serviceDetails.appliances.includes('Other') ? `<div class="booking-detail-field"><label for="booking-otherAppliance">Please specify</label><input id="booking-otherAppliance" class="elea-input" value="${state.serviceDetails.otherAppliance || ''}" placeholder="Tell us what else needs cleaning"></div>` : ''}</section>` : ''}
-      ${binService ? `<section class="booking-section-card"><div class="booking-section-title">Bin details</div><div class="booking-details-grid">${bookingSelect('How many bins need cleaning?', 'binCount', ['1', '2', '3', '4+'], state.serviceDetails)}${bookingSelect('What type of bins?', 'binType', ['General waste', 'Recycling', 'Organic waste', 'Other'], state.serviceDetails)}${bookingSelect('Where are the bins located?', 'binLocation', ['Inside', 'Outside', 'Both'], state.serviceDetails)}${bookingSelect('What condition are the bins in?', 'binCondition', ['Light dirt', 'Heavy dirt', 'Food residue', 'Bad smell', 'Grease', 'Other'], state.serviceDetails)}${bookingSelect('What service do they need?', 'binService', ['Cleaning only', 'Cleaning + disinfection / deodorizing'], state.serviceDetails)}</div></section>` : ''}
+      ${binService ? `<section class="booking-section-card"><div class="booking-section-title">Bin details</div><div class="booking-details-grid">${bookingSelect('How many bins need cleaning?', 'binCount', ['1', '2', '3', '4+'], state.serviceDetails)}${bookingSelect('What type of bins?', 'binType', ['General waste', 'Recycling', 'Organic waste', 'Other'], state.serviceDetails)}${bookingSelect('Where are the bins located?', 'binLocation', ['Inside', 'Outside', 'Both'], state.serviceDetails)}${bookingSelect('What condition are the bins in?', 'binCondition', ['Light dirt', 'Heavy dirt', 'Food residue', 'Bad smell', 'Grease', 'Other'], state.serviceDetails)}${bookingSelect('What service do they need?', 'binService', ['Cleaning only', 'Cleaning + disinfection / deodorizing'], state.serviceDetails)}</div>${bookingTextArea('Special instructions', 'specialInstructions', state.serviceDetails)}</section>` : ''}
       ${detailed || state.selectedServices.some((service) => normalizeSelectedService(service) === 'AFTER-RENOVATION CLEANING') ? `<section class="booking-section-card"><div class="booking-section-title">${detailed ? 'Property condition' : 'Renovation details'}</div><div class="booking-details-grid">${bookingSelect('Visible construction or renovation dust?', 'renovationDust', ['Yes', 'No'], state.serviceDetails)}</div></section>` : ''}
-      <section class="booking-photo-upload"><label for="booking-photos">Upload photos of the property <span>(optional)</span></label><p>${photoRecommended ? 'Photos are especially useful for this service and help us provide a more accurate quote.' : 'Photos can help us understand the property before we prepare your quote.'}</p><input id="booking-photos" class="elea-input" type="file" accept="image/*" multiple><small>${state.serviceDetails.photoNames.length ? `Selected: ${state.serviceDetails.photoNames.join(', ')}` : 'You can select multiple images.'}</small></section>`;
+      <section class="booking-photo-upload"><label for="booking-photos">${binService ? 'Upload photos of the bins' : 'Upload photos of the property'} <span>(optional)</span></label><p>${binService ? 'Photos help us understand the bin condition and the exact cleaning work required.' : photoRecommended ? 'Photos are especially useful for this service and help us provide a more accurate quote.' : 'Photos can help us understand the property before we prepare your quote.'}</p><input id="booking-photos" class="elea-input" type="file" accept="image/*" multiple><small>${state.serviceDetails.photoNames.length ? `Selected: ${state.serviceDetails.photoNames.join(', ')}` : 'You can select multiple images.'}</small></section>`;
   }
   return renderBookingStepCurrent(state);
 }
 
 function bookingDetailRows(state) {
-  const labels = { type: 'Property type', size: 'Property size (m²)', bedrooms: 'Bedrooms', bathrooms: 'Bathrooms', kitchens: 'Kitchens', livingRooms: 'Living rooms', toilets: 'Separate toilets / guest WCs', balconies: 'Balconies / terraces', floors: 'Floors', elevator: 'Elevator available', condition: 'Cleaning condition', lastProfessionalCleaning: 'Last professional cleaning', furnished: 'Property furnished', empty: 'Property currently empty', appliances: 'Appliances / areas to clean', otherAppliance: 'Other appliance / area', renovationDust: 'Construction / renovation dust', photoNames: 'Selected photo files' };
+  const labels = { type: 'Property type', size: 'Property size (m²)', bedrooms: 'Bedrooms', bathrooms: 'Bathrooms', kitchens: 'Kitchens', livingRooms: 'Living rooms', toilets: 'Separate toilets / guest WCs', balconies: 'Balconies / terraces', floors: 'Floors', elevator: 'Elevator available', condition: 'Cleaning condition', lastProfessionalCleaning: 'Last professional cleaning', furnished: 'Property furnished', empty: 'Property currently empty', appliances: 'Appliances / areas to clean', otherAppliance: 'Other appliance / area', renovationDust: 'Construction / renovation dust', binCount: 'Bins to clean', binType: 'Bin type', binLocation: 'Bin location', binCondition: 'Bin condition', binService: 'Bin service', specialInstructions: 'Special instructions', photoNames: 'Selected photo files' };
   return Object.entries({ ...state.property, ...state.serviceDetails }).filter(([, value]) => Array.isArray(value) ? value.length : value).map(([key, value]) => ({ label: labels[key] || key, value: Array.isArray(value) ? value.join(', ') : value }));
 }
 

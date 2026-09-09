@@ -34,7 +34,7 @@ function requireAdminKey(req, res, next) {
 
 app.get('/api/admin/bookings', requireAdminKey, async (req, res) => {
   try {
-    const { data, error } = await sb.from('bookings').select('*').order('created_at', { ascending: false });
+    const { data, error } = await sb.from('bookings').select('*, booking_images(*)').order('created_at', { ascending: false });
     if (error) throw error;
     res.json({ ok: true, bookings: data });
   } catch (err) {

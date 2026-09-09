@@ -2423,6 +2423,10 @@ html, body { max-width: 100vw; overflow-x: hidden; }
   background: #C5A772;
   transition: width .7s ease-out;
 }
+.booking-confirmation, .booking-note { padding: 1rem 1.1rem; background: rgba(197,167,114,.12); border-left: 3px solid #B6965F; color: #174F43; line-height: 1.55; }
+.booking-extra { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid rgba(23,79,67,.14); }
+.booking-extra > h3 { color: #174F43; margin-bottom: 1rem; }
+.booking-field small { margin-top: .45rem; color: rgba(23,79,67,.72); font-size: .82rem; }
 .booking-header {
   position: sticky;
   top: 3px;

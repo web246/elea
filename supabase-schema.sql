@@ -26,6 +26,7 @@ create table if not exists bookings (
   preferred_date date,
   preferred_time text,
   notes text,
+  booking_details jsonb default '{}'::jsonb,
   status text default 'pending',
   created_at timestamptz default now()
 );
@@ -61,6 +62,7 @@ create table if not exists assets (
 
 -- Indexes for common queries
 create index if not exists idx_bookings_created_at on bookings (created_at desc);
+alter table bookings add column if not exists booking_details jsonb default '{}'::jsonb;
 create index if not exists idx_reviews_created_at on reviews (created_at desc);
 
 -- OPTIONAL: basic policies example

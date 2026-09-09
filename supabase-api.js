@@ -44,13 +44,22 @@
 
   async function createBooking(booking) {
     const sb = client(); if (!sb) throw new Error('supabase not available');
-    // booking should be an object matching the bookings table columns
-    return sb.from('bookings').insert([booking]);
+    const images = Array.isArray(booking.booking_images) ? booking.booking_images : [];
+    const payload = { ...booking };
+    delete payload.booking_images;
+    const result = await sb.from('bookings').insert([payload]).select().single();
+    if (result.error || !images.length || !result.data?.id) return result;
+    const imageResult = await sb.from('booking_images').insert(images.map((image) => ({
+      booking_id: result.data.id,
+      storage_path: image.storage_path || '',
+      public_url: image.public_url || image.url || ''
+    })));
+    return imageResult.error ? { data: result.data, error: imageResult.error } : result;
   }
 
   async function listBookings(opts = {}) {
     const sb = client(); if (!sb) throw new Error('supabase not available');
-    let q = sb.from('bookings').select('*');
+    let q = sb.from('bookings').select('*, booking_images(*)');
     if (opts.order) q = q.order(opts.order.column || 'created_at', { ascending: !!opts.ascending });
     return q;
   }
