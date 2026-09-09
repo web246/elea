@@ -2439,31 +2439,46 @@ function getZipCodeOptions(code) {
 }
 
 const pageLanguageMap = {
-  home: 'en', about: 'en', services: 'en', contact: 'en', impressum: 'de', datenschutz: 'de', terms: 'en', cancellation: 'en', login: 'en', register: 'en', forgot: 'en', reset: 'en', admin: 'en'
+  home: 'de', about: 'de', services: 'de', contact: 'de', impressum: 'de', datenschutz: 'de', terms: 'de', cancellation: 'de', login: 'de', register: 'de', forgot: 'de', reset: 'de', admin: 'de'
 };
 
+function normalizeLang(lang) {
+  return lang === 'en' || lang === 'de' ? lang : 'de';
+}
+
 function getLang() {
-  // German is the site default. Migrate the old implicit English default once,
-  // while retaining any language selection made after this release.
+  // Default to German and keep any explicit user choice when it exists.
+  try {
+    const stored = normalizeLang(localStorage.getItem('elea-lang'));
+    if (stored === 'en' || stored === 'de') {
+      localStorage.setItem('elea-lang', stored);
+      return stored;
+    }
+  } catch (e) { /* fall through */ }
+
   try {
     const languageVersion = localStorage.getItem('elea-lang-default-version');
     if (languageVersion !== '2') {
       localStorage.setItem('elea-lang-default-version', '2');
       localStorage.setItem('elea-lang', 'de');
-      return 'de';
     }
-    return localStorage.getItem('elea-lang') || 'de';
-  } catch (e) {
-    return 'de';
-  }
+  } catch (e) { /* non-fatal */ }
+
+  return 'de';
 }
 
 function setLang(lang) {
-  localStorage.setItem('elea-lang', lang);
-  document.documentElement.lang = lang;
+  const nextLang = normalizeLang(lang || getLang());
+  try {
+    localStorage.setItem('elea-lang', nextLang);
+  } catch (e) { /* non-fatal */ }
+
+  document.documentElement.lang = nextLang;
   document.querySelectorAll('[data-lang-toggle]').forEach((btn) => {
-    const isActive = btn.dataset.langToggle === lang;
+    const isActive = btn.dataset.langToggle === nextLang;
     btn.classList.toggle('active', isActive);
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
   });
   applyTranslations();
   // If there's a page-specific title translation, update document.title
@@ -2559,7 +2574,11 @@ function applyTranslations() {
     el.src = t(key);
   });
   document.querySelectorAll('[data-lang-toggle]').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.langToggle === getLang());
+    const currentLang = getLang();
+    const isActive = btn.dataset.langToggle === currentLang;
+    btn.classList.toggle('active', isActive);
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
   });
 
   const guestModal = document.querySelector('.guest-book-modal');
